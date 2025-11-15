@@ -51,7 +51,8 @@ CREATE INDEX IF NOT EXISTS idx_publications_pubdate ON publications(publication_
 CREATE TABLE IF NOT EXISTS media_assets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  url text NOT NULL,
+  data bytea NOT NULL,
+  filename text,
   mime text NOT NULL,
   width integer CHECK (width IS NULL OR width >= 0),
   height integer CHECK (height IS NULL OR height >= 0),

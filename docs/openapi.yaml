@@ -1044,7 +1044,7 @@ paths:
               example:
                 id: "123e4567-e89b-12d3-a456-426614174000"
                 owner_id: "123e4567-e89b-12d3-a456-426614174000"
-                url: "https://cdn.sense.social/media/image123.jpg"
+                filename: "sunset.jpg"
                 mime: "image/jpeg"
                 width: 1920
                 height: 1080
@@ -1067,8 +1067,8 @@ paths:
   /media/{id}:
     get:
       tags: [Media]
-      summary: Получить медиа-файл
-      description: Получение информации о медиа-файле
+      summary: Получить информацию о медиа-файле
+      description: Получение метаданных медиа-файла
       parameters:
         - $ref: '#/components/parameters/MediaId'
       responses:
@@ -1096,6 +1096,37 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /media/{id}/file:
+    get:
+      tags: [Media]
+      summary: Получить медиа-файл
+      description: Получение бинарных данных медиа-файла
+      parameters:
+        - $ref: '#/components/parameters/MediaId'
+      responses:
+        '200':
+          description: Бинарные данные медиа-файла
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Type:
+              schema:
+                type: string
+              description: MIME тип файла
+              example: "image/jpeg"
+            Content-Disposition:
+              schema:
+                type: string
+              description: Имя файла для скачивания
+              example: "attachment; filename=sunset.jpg"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -1571,7 +1602,7 @@ components:
 
     MediaAsset:
       type: object
-      required: [id, owner_id, url, mime, created_at]
+      required: [id, owner_id, mime, created_at]
       properties:
         id:
           type: string
@@ -1583,11 +1614,11 @@ components:
           format: uuid
           description: ID владельца медиа-файла
           example: "123e4567-e89b-12d3-a456-426614174000"
-        url:
+        filename:
           type: string
-          format: uri
-          description: URL медиа-файла
-          example: "https://cdn.sense.social/media/image123.jpg"
+          nullable: true
+          description: Оригинальное имя файла
+          example: "sunset.jpg"
         mime:
           type: string
           description: MIME тип файла
