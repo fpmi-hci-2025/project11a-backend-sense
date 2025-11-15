@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS users (
   icon_url text,
   email text UNIQUE,
   phone text UNIQUE,
+  password_hash text NOT NULL,
   registered_at timestamptz NOT NULL DEFAULT now(),
   description text,
   role user_role NOT NULL DEFAULT 'user',

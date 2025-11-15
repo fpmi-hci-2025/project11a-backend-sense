@@ -1,0 +1,30 @@
+{
+  "base_url": "http://localhost:8080",
+  "users": {
+    "user1": {
+      "username": "testuser1",
+      "email": "testuser1@example.com",
+      "password": "testpass123",
+      "phone": "+375291234567",
+      "description": "Test user 1 description"
+    },
+    "user2": {
+      "username": "testuser2",
+      "email": "testuser2@example.com",
+      "password": "testpass456",
+      "phone": "+375291234568",
+      "description": "Test user 2 description"
+    }
+  },
+  "tokens": {
+    "user1": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNDc3ZjhhZDAtMzExYS00Yzk5LWE1NmQtNGRkYTM0YzU0NTVkIiwidXNlcm5hbWUiOiJ0ZXN0dXNlcjEiLCJyb2xlIjoidXNlciIsImV4cCI6MTc2MzI5NTI2OSwibmJmIjoxNzYzMjA4ODY5LCJpYXQiOjE3NjMyMDg4Njl9.iUrgXqbPHnSeRvcviYazhAhIoYp-F-WZYXmEUIf0ENQ",
+    "user2": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiZmQ0Yjc0NTEtYmY2Yi00Y2FjLWIxZjctZjc5ODc3YjA5M2ViIiwidXNlcm5hbWUiOiJ0ZXN0dXNlcjIiLCJyb2xlIjoidXNlciIsImV4cCI6MTc2MzI5NTI3MCwibmJmIjoxNzYzMjA4ODcwLCJpYXQiOjE3NjMyMDg4NzB9.nVGKTngWLstAxP5aMp2p4gZYLNK0DhJXjVkfOpjkoqo"
+  },
+  "ids": {
+    "user1_id": "477f8ad0-311a-4c99-a56d-4dda34c5455d",
+    "user2_id": "fd4b7451-bf6b-4cac-b1f7-f79877b093eb",
+    "publication_id": "5a6d98c5-91b7-42ea-bdae-5a0dfb0089ac",
+    "comment_id": "358fb67b-fc24-491e-b2c1-5b86f666b70f",
+    "media_id": ""
+  }
+}

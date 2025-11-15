@@ -1,0 +1,17 @@
+database:
+  host: postgres
+  port: 5432
+  user: postgres
+  password: postgres
+  name: sense_db
+
+jwt:
+  secret: "your-secret-key-here-change-in-production-min-32-chars"
+  expiry: 86400  # 1 day in seconds
+
+ai:
+  service_url: "http://localhost:8000"
+
+server:
+  port: 8080
+
