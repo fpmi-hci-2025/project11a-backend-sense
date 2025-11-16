@@ -228,7 +228,7 @@ func (r *userRepository) Search(ctx context.Context, query string, role *domain.
 	var total int
 	countQuery := "SELECT COUNT(*) FROM users WHERE (username ILIKE $1 OR description ILIKE $1)"
 	if role != nil {
-		countQuery += fmt.Sprintf(" AND role = $2")
+		countQuery += " AND role = $2"
 	}
 	err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total)
 	if err != nil {

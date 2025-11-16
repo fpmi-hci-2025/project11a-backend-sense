@@ -17,6 +17,10 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+const (
+	errForbiddenNotAuthor = "forbidden: not the author"
+)
+
 // ErrorResponse represents error response
 type ErrorResponse struct {
 	Error   string  `json:"error"`
@@ -28,7 +32,7 @@ type ErrorResponse struct {
 func WriteError(w http.ResponseWriter, statusCode int, errorCode, message string, details *string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(ErrorResponse{
+	_ = json.NewEncoder(w).Encode(ErrorResponse{
 		Error:   errorCode,
 		Message: message,
 		Details: details,
@@ -39,7 +43,7 @@ func WriteError(w http.ResponseWriter, statusCode int, errorCode, message string
 func WriteJSON(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 // ValidateRequest validates request using validator
@@ -149,7 +153,9 @@ func ExtractImageMetadata(data []byte, mimeType string) (*ImageMetadata, error) 
 
 // ReadFileContent reads all content from a file
 func ReadFileContent(file multipart.File) ([]byte, error) {
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	return io.ReadAll(file)
 }
 

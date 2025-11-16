@@ -133,7 +133,9 @@ func (r *commentRepository) Like(ctx context.Context, userID, commentID string) 
 	if err != nil {
 		return false, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	// Check if already liked
 	var exists bool

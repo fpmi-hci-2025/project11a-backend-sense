@@ -14,8 +14,12 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+const (
+	testFilename = "test.jpg"
+)
+
 func createTestMedia() *domain.MediaAsset {
-	filename := "test.jpg"
+	filename := testFilename
 	width := 1920
 	height := 1080
 	return &domain.MediaAsset{
@@ -37,7 +41,7 @@ func TestUpload_Success(t *testing.T) {
 	mediaRepo := mocks.NewMockMediaRepository(ctrl)
 	uc := NewUseCase(mediaRepo)
 
-	filename := "test.jpg"
+	filename := testFilename
 	req := &UploadRequest{
 		Data:     []byte("fake image data"),
 		Filename: &filename,
@@ -68,7 +72,7 @@ func TestUpload_RepositoryError(t *testing.T) {
 	mediaRepo := mocks.NewMockMediaRepository(ctrl)
 	uc := NewUseCase(mediaRepo)
 
-	filename := "test.jpg"
+	filename := testFilename
 	req := &UploadRequest{
 		Data:     []byte("fake image data"),
 		Filename: &filename,

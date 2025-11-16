@@ -48,6 +48,7 @@ type MediaConfig struct {
 
 // Load loads configuration from YAML file
 func Load(configPath string) (*Config, error) {
+	// #nosec G304 -- configPath is expected to be provided by the application, not user input
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)

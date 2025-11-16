@@ -24,7 +24,9 @@ func (r *publicationRepository) Create(ctx context.Context, publication *domain.
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	// Insert publication
 	query := `
@@ -78,7 +80,9 @@ func (r *publicationRepository) Update(ctx context.Context, publication *domain.
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	// Update publication
 	query := `
@@ -271,7 +275,9 @@ func (r *publicationRepository) Like(ctx context.Context, userID, publicationID 
 	if err != nil {
 		return false, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
 
 	// Check if already liked
 	var exists bool

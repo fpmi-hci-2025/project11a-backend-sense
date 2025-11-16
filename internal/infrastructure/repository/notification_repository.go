@@ -42,7 +42,7 @@ func (r *notificationRepository) GetByUser(ctx context.Context, userID string, u
 	argIndex := 2
 
 	if unreadOnly {
-		where += fmt.Sprintf(" AND is_read = false")
+		where += " AND is_read = false"
 	}
 
 	// Get total

@@ -51,7 +51,9 @@ func (h *MediaHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, http.StatusBadRequest, "validation_error", "Неверные данные в запросе", nil)
 		return
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	// Validate file size
 	if err := ValidateFileSize(fileHeader.Size, h.maxSize); err != nil {

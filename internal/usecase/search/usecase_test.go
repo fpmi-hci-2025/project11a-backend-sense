@@ -13,6 +13,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+const (
+	testQuery = "test"
+)
+
 func createTestPublication() *domain.Publication {
 	content := "Test publication"
 	return &domain.Publication{
@@ -119,7 +123,7 @@ func TestSearchUsers_Success(t *testing.T) {
 	tagRepo := mocks.NewMockTagRepository(ctrl)
 	uc := NewUseCase(publicationRepo, userRepo, tagRepo)
 
-	query := "test"
+	query := testQuery
 
 	users := []*domain.User{
 		createTestUser(),
@@ -145,7 +149,7 @@ func TestSearchUsers_WithRole(t *testing.T) {
 	tagRepo := mocks.NewMockTagRepository(ctrl)
 	uc := NewUseCase(publicationRepo, userRepo, tagRepo)
 
-	query := "test"
+	query := testQuery
 	role := domain.UserRoleCreator
 
 	users := []*domain.User{
@@ -196,7 +200,7 @@ func TestGetTags_WithSearch(t *testing.T) {
 	tagRepo := mocks.NewMockTagRepository(ctrl)
 	uc := NewUseCase(publicationRepo, userRepo, tagRepo)
 
-	search := "test"
+	search := testQuery
 	tags := []*domain.Tag{
 		createTestTag(),
 	}

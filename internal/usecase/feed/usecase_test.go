@@ -13,11 +13,15 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+const (
+	testUserID = "user-123"
+)
+
 func createTestPublication() *domain.Publication {
 	content := "Test publication"
 	return &domain.Publication{
 		ID:             "pub-123",
-		AuthorID:       "user-123",
+		AuthorID:       testUserID,
 		Type:           domain.PublicationTypePost,
 		Content:        &content,
 		PublicationDate: time.Now(),
@@ -35,7 +39,7 @@ func TestGetFeed_Success(t *testing.T) {
 	publicationRepo := mocks.NewMockPublicationRepository(ctrl)
 	uc := NewUseCase(publicationRepo)
 
-	userID := "user-123"
+	userID := testUserID
 	filters := &domain.FeedFilters{
 		Type:       &[]domain.PublicationType{domain.PublicationTypePost}[0],
 		Visibility: &[]domain.VisibilityType{domain.VisibilityTypePublic}[0],
@@ -63,7 +67,7 @@ func TestGetFeed_Empty(t *testing.T) {
 	publicationRepo := mocks.NewMockPublicationRepository(ctrl)
 	uc := NewUseCase(publicationRepo)
 
-	userID := "user-123"
+	userID := testUserID
 	filters := &domain.FeedFilters{}
 
 	publicationRepo.EXPECT().
@@ -93,10 +97,10 @@ func TestGetUserFeed_Success(t *testing.T) {
 	}
 
 	publicationRepo.EXPECT().
-		GetByAuthor(gomock.Any(), "user-123", filters, 10, 0).
+		GetByAuthor(gomock.Any(), testUserID, filters, 10, 0).
 		Return(publications, 1, nil)
 
-	result, total, err := uc.GetUserFeed(context.Background(), "user-123", filters, 10, 0)
+	result, total, err := uc.GetUserFeed(context.Background(), testUserID, filters, 10, 0)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -120,10 +124,10 @@ func TestGetSavedFeed_Success(t *testing.T) {
 	}
 
 	publicationRepo.EXPECT().
-		GetSaved(gomock.Any(), "user-123", filters, 10, 0).
+		GetSaved(gomock.Any(), testUserID, filters, 10, 0).
 		Return(savedPublications, 1, nil)
 
-	result, total, err := uc.GetSavedFeed(context.Background(), "user-123", filters, 10, 0)
+	result, total, err := uc.GetSavedFeed(context.Background(), testUserID, filters, 10, 0)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -137,7 +141,7 @@ func TestGetFeed_WithFilters(t *testing.T) {
 	publicationRepo := mocks.NewMockPublicationRepository(ctrl)
 	uc := NewUseCase(publicationRepo)
 
-	userID := "user-123"
+	userID := testUserID
 	dateFrom := time.Now().Add(-24 * time.Hour)
 	dateTo := time.Now()
 	pubType := domain.PublicationTypeArticle

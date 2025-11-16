@@ -100,7 +100,7 @@ func (h *PublicationHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	publication, err := h.publicationUC.Update(r.Context(), id, userID, &req)
 	if err != nil {
-		if err.Error() == "forbidden: not the author" {
+		if err.Error() == errForbiddenNotAuthor {
 			WriteError(w, http.StatusForbidden, "forbidden", "Недостаточно прав", nil)
 			return
 		}
@@ -123,7 +123,7 @@ func (h *PublicationHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if err := h.publicationUC.Delete(r.Context(), id, userID); err != nil {
-		if err.Error() == "forbidden: not the author" {
+		if err.Error() == errForbiddenNotAuthor {
 			WriteError(w, http.StatusForbidden, "forbidden", "Недостаточно прав", nil)
 			return
 		}
@@ -203,7 +203,7 @@ func (h *PublicationHandler) Save(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Note *string `json:"note"`
 	}
-	ParseJSON(r, &body) // Ignore errors, note is optional
+	_ = ParseJSON(r, &body) // Ignore errors, note is optional
 
 	if err := h.publicationUC.Save(r.Context(), id, userID, body.Note); err != nil {
 		WriteError(w, http.StatusNotFound, "not_found", "Публикация не найдена", nil)

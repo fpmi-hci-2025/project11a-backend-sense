@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -125,7 +124,7 @@ func (h *CommentHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	comment, err := h.commentUC.Update(r.Context(), id, userID, body.Text)
 	if err != nil {
-		if err.Error() == "forbidden: not the author" {
+		if err.Error() == errForbiddenNotAuthor {
 			WriteError(w, http.StatusForbidden, "forbidden", "Недостаточно прав", nil)
 			return
 		}
@@ -148,7 +147,7 @@ func (h *CommentHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if err := h.commentUC.Delete(r.Context(), id, userID); err != nil {
-		if err.Error() == "forbidden: not the author" {
+		if err.Error() == errForbiddenNotAuthor {
 			WriteError(w, http.StatusForbidden, "forbidden", "Недостаточно прав", nil)
 			return
 		}
@@ -227,19 +226,4 @@ func (h *CommentHandler) Like(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func getPaginationFromRequest(r *http.Request) (limit, offset int) {
-	limit = 20
-	offset = 0
-	if l := r.URL.Query().Get("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= 100 {
-			limit = parsed
-		}
-	}
-	if o := r.URL.Query().Get("offset"); o != "" {
-		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
-			offset = parsed
-		}
-	}
-	return limit, offset
-}
 
