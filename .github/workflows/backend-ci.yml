@@ -10,21 +10,25 @@ on:
     branches: [ main, master ]
     paths:
       - 'cmd/**'
+      - 'internal/**'
       - 'go.mod'
       - 'go.sum'
       - 'Dockerfile'
       - '.github/workflows/backend-ci.yml'
       - 'config.yaml'
+      - 'scripts/**'
     tags:
       - 'deploy-*'
   pull_request:
     branches: [ main, master ]
     paths:
       - 'cmd/**'
+      - 'internal/**'
       - 'go.mod'
       - 'go.sum'
       - 'Dockerfile'
       - '.github/workflows/backend-ci.yml'
+      - 'scripts/**'
 
 jobs:
   test:
@@ -52,10 +56,7 @@ jobs:
       run: go mod download
       
     - name: Run tests
-      run: go test -v ./cmd/api
-      
-    - name: Run tests with coverage
-      run: go test -v -coverprofile=coverage.out ./cmd/api
+      run: go test -v ./...
       
     - name: Upload coverage
       uses: codecov/codecov-action@v3

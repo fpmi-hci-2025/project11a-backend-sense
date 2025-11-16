@@ -12,14 +12,14 @@ import (
 
 // UseCase handles AI use cases
 type UseCase struct {
-	aiClient          *aiClient.Client
+	aiClient          aiClient.ClientInterface
 	recommendationRepo domain.RecommendationRepository
 	publicationRepo    domain.PublicationRepository
 }
 
 // NewUseCase creates a new AI use case
 func NewUseCase(
-	aiClient *aiClient.Client,
+	aiClient aiClient.ClientInterface,
 	recommendationRepo domain.RecommendationRepository,
 	publicationRepo domain.PublicationRepository,
 ) *UseCase {

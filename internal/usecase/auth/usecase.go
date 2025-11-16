@@ -16,11 +16,11 @@ import (
 // UseCase handles authentication use cases
 type UseCase struct {
 	userRepo domain.UserRepository
-	tokenSvc *jwt.TokenService
+	tokenSvc jwt.TokenServiceInterface
 }
 
 // NewUseCase creates a new auth use case
-func NewUseCase(userRepo domain.UserRepository, tokenSvc *jwt.TokenService) *UseCase {
+func NewUseCase(userRepo domain.UserRepository, tokenSvc jwt.TokenServiceInterface) *UseCase {
 	return &UseCase{
 		userRepo: userRepo,
 		tokenSvc: tokenSvc,
