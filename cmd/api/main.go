@@ -10,20 +10,21 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	httpDelivery "sense-backend/internal/delivery/http"
+	authHandler "sense-backend/internal/delivery/http/handlers"
 	"sense-backend/internal/infrastructure/database"
 	"sense-backend/internal/infrastructure/jwt"
+	"sense-backend/internal/infrastructure/repository"
 	authUsecase "sense-backend/internal/usecase/auth"
-	publicationUsecase "sense-backend/internal/usecase/publication"
 	commentUsecase "sense-backend/internal/usecase/comment"
-	profileUsecase "sense-backend/internal/usecase/profile"
 	feedUsecase "sense-backend/internal/usecase/feed"
 	mediaUsecase "sense-backend/internal/usecase/media"
-	authHandler "sense-backend/internal/delivery/http/handlers"
-	"sense-backend/internal/infrastructure/repository"
+	profileUsecase "sense-backend/internal/usecase/profile"
+	publicationUsecase "sense-backend/internal/usecase/publication"
 	"sense-backend/pkg/config"
 	"sense-backend/pkg/logger"
+
+	"github.com/go-playground/validator/v10"
 )
 
 func main() {
@@ -39,15 +40,6 @@ func main() {
 
 	// Initialize logger
 	appLogger := logger.New()
-
-	// Run migrations - try multiple paths
-	migrationsPath := "./migrations"
-	if _, err := os.Stat(migrationsPath); os.IsNotExist(err) {
-		migrationsPath = "/app/migrations" // Docker path
-	}
-	if err := database.RunMigrations(&cfg.Database, migrationsPath); err != nil {
-		appLogger.WithError(err).Warn("Failed to run migrations, continuing anyway")
-	}
 
 	// Connect to database
 	dbPool, err := database.NewPool(&cfg.Database)
