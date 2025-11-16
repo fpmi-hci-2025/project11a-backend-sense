@@ -3,12 +3,6 @@ version: 2
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
-    - vendor
-    - mocks
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*\\.gen\\.go$"
 
 output:
   format: colored-line-number
@@ -37,8 +31,6 @@ linters-settings:
       - wrapperFunc
   gocyclo:
     min-complexity: 15
-  govet:
-    check-shadowing: true
   misspell:
     locale: US
   nolintlint:
@@ -64,6 +56,12 @@ linters:
     - unused
 
 issues:
+  exclude-dirs:
+    - vendor
+    - mocks
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.gen\\.go$"
   exclude-rules:
     - path: _test\.go
       linters:
