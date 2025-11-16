@@ -138,5 +138,4 @@ jobs:
             --restart always \
             --publish 8080:8080 \
             --name $CONTAINER_NAME \
-            --env-file /opt/sense-backend/.env \
             $REGISTRY/$IMAGE_NAME:${GITHUB_SHA:0:7}
