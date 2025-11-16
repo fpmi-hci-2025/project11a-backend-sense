@@ -134,8 +134,9 @@ jobs:
           docker pull $REGISTRY/$IMAGE_NAME:${GITHUB_SHA:0:7}
 
           # Run a new container from a new image
+          # Using host network mode to access postgres on localhost
           docker run -d \
             --restart always \
-            --publish 8080:8080 \
+            --network host \
             --name $CONTAINER_NAME \
             $REGISTRY/$IMAGE_NAME:${GITHUB_SHA:0:7}
