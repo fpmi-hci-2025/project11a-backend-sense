@@ -15,6 +15,8 @@ on:
       - 'Dockerfile'
       - '.github/workflows/backend-ci.yml'
       - 'config.yaml'
+    tags:
+      - 'deploy-*'
   pull_request:
     branches: [ main, master ]
     paths:
@@ -82,8 +84,7 @@ jobs:
     name: Build and Push to Digital Ocean
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'push'
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -108,7 +109,6 @@ jobs:
     name: Deploy to Digital Ocean Droplet
     runs-on: ubuntu-latest
     needs: build_and_push
-    if: github.event_name == 'push'
     
     steps:
     - name: Deploy to Digital Ocean droplet via SSH
