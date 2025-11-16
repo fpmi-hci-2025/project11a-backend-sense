@@ -59,8 +59,13 @@ jobs:
       
     - name: Install golangci-lint
       run: |
-        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+        # Install golangci-lint v2 which supports config version 2
+        # Using install script to get the latest version that supports v2 config
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
         echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        
+    - name: Verify golangci-lint version
+      run: golangci-lint --version
         
     - name: Run golangci-lint
       run: golangci-lint run --timeout=5m
