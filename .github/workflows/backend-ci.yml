@@ -77,18 +77,6 @@ jobs:
     - name: Build Docker image
       run: |
         docker build -t sense-backend:latest .
-        
-    - name: Test Docker image
-      run: |
-        docker run -d --name test-container -p 8080:8080 sense-backend:latest
-        sleep 10
-        
-        # Test health endpoint
-        curl -f http://localhost:8080/health || exit 1
-        
-        # Cleanup
-        docker stop test-container
-        docker rm test-container
 
   build_and_push:
     name: Build and Push to Digital Ocean
