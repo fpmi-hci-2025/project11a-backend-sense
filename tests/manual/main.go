@@ -21,6 +21,7 @@ func main() {
 		skipFeed    = flag.Bool("skip-feed", false, "Skip feed tests")
 		skipProfile = flag.Bool("skip-profile", false, "Skip profile tests")
 		skipMedia   = flag.Bool("skip-media", false, "Skip media tests")
+		skipAI      = flag.Bool("skip-ai", false, "Skip AI tests")
 	)
 	flag.Parse()
 
@@ -28,18 +29,7 @@ func main() {
 	if err := testdata.LoadTestData(*dataFile); err != nil {
 		log.Printf("Warning: Failed to load test data: %v (will create new)", err)
 		// Initialize with default values
-		testData := &testdata.TestData{}
-		testData.BaseURL = *baseURL
-		testData.Users.User1.Username = "testuser1"
-		testData.Users.User1.Email = "testuser1@example.com"
-		testData.Users.User1.Password = "testpass123"
-		testData.Users.User1.Phone = "+375291234567"
-		testData.Users.User1.Description = "Test user 1"
-		testData.Users.User2.Username = "testuser2"
-		testData.Users.User2.Email = "testuser2@example.com"
-		testData.Users.User2.Password = "testpass456"
-		testData.Users.User2.Phone = "+375291234568"
-		testData.Users.User2.Description = "Test user 2"
+		testdata.InitializeTestData(*baseURL)
 	}
 
 	// Create API client
@@ -105,6 +95,16 @@ func main() {
 		if err := testers.TestMediaEndpoints(apiClient); err != nil {
 			log.Printf("Media tests failed: %v", err)
 			errors = append(errors, fmt.Errorf("media: %w", err))
+		}
+		if err := testdata.SaveTestData(*dataFile); err != nil {
+			log.Printf("Warning: Failed to save test data: %v", err)
+		}
+	}
+
+	if !*skipAI {
+		if err := testers.TestAIEndpoints(apiClient); err != nil {
+			log.Printf("AI tests failed: %v", err)
+			errors = append(errors, fmt.Errorf("ai: %w", err))
 		}
 		if err := testdata.SaveTestData(*dataFile); err != nil {
 			log.Printf("Warning: Failed to save test data: %v", err)

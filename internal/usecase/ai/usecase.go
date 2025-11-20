@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"sense-backend/internal/domain"
 	aiClient "sense-backend/internal/infrastructure/ai"
+
+	"github.com/google/uuid"
 )
 
 // UseCase handles AI use cases
 type UseCase struct {
-	aiClient          aiClient.ClientInterface
+	aiClient           aiClient.ClientInterface
 	recommendationRepo domain.RecommendationRepository
 	publicationRepo    domain.PublicationRepository
 }
@@ -24,7 +25,7 @@ func NewUseCase(
 	publicationRepo domain.PublicationRepository,
 ) *UseCase {
 	return &UseCase{
-		aiClient:          aiClient,
+		aiClient:           aiClient,
 		recommendationRepo: recommendationRepo,
 		publicationRepo:    publicationRepo,
 	}
@@ -45,9 +46,28 @@ type PurifyResponse struct {
 // GetRecommendations retrieves recommendations for user
 func (uc *UseCase) GetRecommendations(ctx context.Context, userID string, limit int, algorithm *string) ([]*domain.Publication, error) {
 	// Get recommendations from AI service
+	// Note: The AI service doesn't implement the recommend endpoint, so we fall back to
+	// getting recommendations from the database (previously saved recommendations)
 	recommendResp, err := uc.aiClient.Recommend(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get AI recommendations: %w", err)
+		// AI service doesn't support recommendations - fall back to database
+		// Get existing recommendations from database instead
+		publicationIDs, err := uc.recommendationRepo.GetPublicationIDs(ctx, userID, limit)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get recommendations: %w", err)
+		}
+
+		// Get publications
+		var publications []*domain.Publication
+		for _, publicationID := range publicationIDs {
+			pub, err := uc.publicationRepo.GetByID(ctx, publicationID)
+			if err != nil {
+				continue // Skip if publication not found
+			}
+			publications = append(publications, pub)
+		}
+
+		return publications, nil
 	}
 
 	// Get publications
@@ -152,4 +172,3 @@ func (uc *UseCase) PurifyText(ctx context.Context, req *PurifyRequest) (*PurifyR
 		Confidence:  confidence,
 	}, nil
 }
-

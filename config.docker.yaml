@@ -10,7 +10,7 @@ jwt:
   expiry: 86400  # 1 day in seconds
 
 ai:
-  service_url: "http://localhost:8000"
+  service_url: "http://174.138.14.66:7070"
 
 server:
   port: 8080

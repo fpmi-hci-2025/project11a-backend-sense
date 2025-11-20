@@ -56,8 +56,10 @@ func TestAuthEndpoints(c *client.Client) error {
 		if err != nil {
 			return fmt.Errorf("login user1 after conflict failed: %w", err)
 		}
-		if err := client.CheckStatus(resp, http.StatusOK); err != nil {
-			return fmt.Errorf("login user1 after conflict status check failed: %w", err)
+		if resp.StatusCode != http.StatusOK {
+			// Login failed - user exists but password doesn't match
+			// This happens when test_data.json has old data but user was created with different password
+			return fmt.Errorf("login user1 failed: user exists but password doesn't match. Please delete test_data.json and existing users, or reset the database")
 		}
 	} else if err := client.CheckStatus(resp, http.StatusCreated); err != nil {
 		return fmt.Errorf("register user1 status check failed: %w", err)

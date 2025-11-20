@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -76,8 +78,18 @@ func (c *Client) DoMultipartRequest(method, path string, filePath string, fields
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
 
-	// Add file
-	part, err := writer.CreateFormFile("file", filePath)
+	// Detect MIME type from file extension
+	filename := filepath.Base(filePath)
+	mimeType := mime.TypeByExtension(filepath.Ext(filename))
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+
+	// Add file with proper MIME type
+	part, err := writer.CreatePart(map[string][]string{
+		"Content-Disposition": {fmt.Sprintf(`form-data; name="file"; filename="%s"`, filename)},
+		"Content-Type":       {mimeType},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create form file: %w", err)
 	}

@@ -2,8 +2,10 @@ package testdata
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
+	"time"
 )
 
 // TestData stores test data
@@ -150,4 +152,29 @@ func SetMediaID(id string) {
 	if data != nil {
 		data.IDs.MediaID = id
 	}
+}
+
+// InitializeTestData initializes test data with default values
+func InitializeTestData(baseURL string) {
+	dataLock.Lock()
+	defer dataLock.Unlock()
+	
+	// Use timestamp-based usernames and phone numbers to avoid conflicts
+	// This ensures each test run can create new users if needed
+	timestamp := time.Now().Unix()
+	
+	data = &TestData{}
+	data.BaseURL = baseURL
+	data.Users.User1.Username = fmt.Sprintf("testuser1_%d", timestamp)
+	data.Users.User1.Email = fmt.Sprintf("testuser1_%d@example.com", timestamp)
+	data.Users.User1.Password = "testpass123"
+	// Make phone number unique using timestamp
+	data.Users.User1.Phone = fmt.Sprintf("+37529%07d", timestamp%10000000)
+	data.Users.User1.Description = "Test user 1"
+	data.Users.User2.Username = fmt.Sprintf("testuser2_%d", timestamp)
+	data.Users.User2.Email = fmt.Sprintf("testuser2_%d@example.com", timestamp)
+	data.Users.User2.Password = "testpass456"
+	// Make phone number unique using timestamp + 1
+	data.Users.User2.Phone = fmt.Sprintf("+37529%07d", (timestamp+1)%10000000)
+	data.Users.User2.Description = "Test user 2"
 }

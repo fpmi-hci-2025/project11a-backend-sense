@@ -12,9 +12,11 @@ import (
 
 	httpDelivery "sense-backend/internal/delivery/http"
 	authHandler "sense-backend/internal/delivery/http/handlers"
+	"sense-backend/internal/infrastructure/ai"
 	"sense-backend/internal/infrastructure/database"
 	"sense-backend/internal/infrastructure/jwt"
 	"sense-backend/internal/infrastructure/repository"
+	aiUsecase "sense-backend/internal/usecase/ai"
 	authUsecase "sense-backend/internal/usecase/auth"
 	commentUsecase "sense-backend/internal/usecase/comment"
 	feedUsecase "sense-backend/internal/usecase/feed"
@@ -53,9 +55,13 @@ func main() {
 	publicationRepo := repository.NewPublicationRepository(dbPool)
 	commentRepo := repository.NewCommentRepository(dbPool)
 	mediaRepo := repository.NewMediaRepository(dbPool)
+	recommendationRepo := repository.NewRecommendationRepository(dbPool)
 
 	// Initialize JWT service
 	tokenSvc := jwt.NewTokenService(&cfg.JWT)
+
+	// Initialize AI client
+	aiClient := ai.NewClient(cfg.AI.ServiceURL)
 
 	// Initialize use cases
 	authUC := authUsecase.NewUseCase(userRepo, tokenSvc)
@@ -64,6 +70,7 @@ func main() {
 	profileUC := profileUsecase.NewUseCase(userRepo)
 	feedUC := feedUsecase.NewUseCase(publicationRepo)
 	mediaUC := mediaUsecase.NewUseCase(mediaRepo)
+	aiUC := aiUsecase.NewUseCase(aiClient, recommendationRepo, publicationRepo)
 
 	// Initialize validator
 	validator := validator.New()
@@ -75,9 +82,10 @@ func main() {
 	profileH := authHandler.NewProfileHandler(profileUC, validator)
 	feedH := authHandler.NewFeedHandler(feedUC, validator)
 	mediaH := authHandler.NewMediaHandler(mediaUC, validator, cfg.Media.MaxFileSize)
+	aiH := authHandler.NewAIHandler(aiUC, validator)
 
 	// Initialize router
-	router := httpDelivery.NewRouter(validator, appLogger, tokenSvc, authH, publicationH, commentH, profileH, feedH, mediaH)
+	router := httpDelivery.NewRouter(validator, appLogger, tokenSvc, authH, publicationH, commentH, profileH, feedH, mediaH, aiH)
 	muxRouter := router.SetupRoutes()
 
 	// Setup server
