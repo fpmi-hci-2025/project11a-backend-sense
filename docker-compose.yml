@@ -44,9 +44,9 @@ services:
     ports:
       - "9090:8080"
     volumes:
-      - ./docs/openapi.yaml:/usr/share/nginx/html/openapi.yaml
+      - ./docs/openapi.yaml:/tmp/openapi.yaml
     environment:
-      - SWAGGER_JSON=/usr/share/nginx/html/openapi.yaml
+      - SWAGGER_JSON=/tmp/openapi.yaml
     restart: unless-stopped
 
 volumes:
