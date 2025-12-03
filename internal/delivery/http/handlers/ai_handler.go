@@ -44,9 +44,6 @@ func (h *AIHandler) GetRecommendations(w http.ResponseWriter, r *http.Request) {
 		Limit     *int    `json:"limit"`
 		Algorithm *string `json:"algorithm"`
 	}
-	if err := ParseJSON(r, &req); err != nil {
-		// Request body is optional, so we continue with defaults
-	}
 
 	limit := 20
 	if req.Limit != nil {

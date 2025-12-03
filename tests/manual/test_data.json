@@ -2,29 +2,29 @@
   "base_url": "http://localhost:8080",
   "users": {
     "user1": {
-      "username": "testuser1_1763670258",
-      "email": "testuser1_1763670258@example.com",
+      "username": "testuser1_1763730599",
+      "email": "testuser1_1763730599@example.com",
       "password": "testpass123",
-      "phone": "+375293670258",
+      "phone": "+375293730599",
       "description": "Test user 1"
     },
     "user2": {
-      "username": "testuser2_1763670258",
-      "email": "testuser2_1763670258@example.com",
+      "username": "testuser2_1763730599",
+      "email": "testuser2_1763730599@example.com",
       "password": "testpass456",
-      "phone": "+375293670259",
+      "phone": "+375293730600",
       "description": "Test user 2"
     }
   },
   "tokens": {
-    "user1": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiNGFkNGVlMzUtMGQ0NC00ZTE5LTkyODktZDY4ZThhOWNjOWFmIiwidXNlcm5hbWUiOiJ0ZXN0dXNlcjFfMTc2MzY3MDI1OCIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzYzNzU2NjU4LCJuYmYiOjE3NjM2NzAyNTgsImlhdCI6MTc2MzY3MDI1OH0.aepxtoKXeTMlp7BucQvOx0fMHyo-REIfTFvDSlzKCI4",
-    "user2": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiOTBkYjZlMjEtYzAzNC00ODNhLWJjZDctM2Y4NGNiODVlMjUyIiwidXNlcm5hbWUiOiJ0ZXN0dXNlcjJfMTc2MzY3MDI1OCIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzYzNzU2NjU4LCJuYmYiOjE3NjM2NzAyNTgsImlhdCI6MTc2MzY3MDI1OH0.0_qkifAkglGmcnpE3qsiOiU6yeP7VFtretzPDXcMgMU"
+    "user1": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMjJiOGNkNGYtZTVmNi00YTdmLWJmMzctMjU5OTNmN2NlMmIxIiwidXNlcm5hbWUiOiJ0ZXN0dXNlcjFfMTc2MzczMDU5OSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzYzODE2OTk5LCJuYmYiOjE3NjM3MzA1OTksImlhdCI6MTc2MzczMDU5OX0.Ubmrwwc5KSzdET5TegMXK8ys_SrhK4HRM03EIi3j0YA",
+    "user2": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDVmMTA0YWItZWYzMi00N2IyLWJkMzUtNWM4MjVlOGQxZGI4IiwidXNlcm5hbWUiOiJ0ZXN0dXNlcjJfMTc2MzczMDU5OSIsInJvbGUiOiJ1c2VyIiwiZXhwIjoxNzYzODE2OTk5LCJuYmYiOjE3NjM3MzA1OTksImlhdCI6MTc2MzczMDU5OX0.qsEva3p3PKkwYZR_sOmtvia79lWNIrBQ5sc6f5HI8-k"
   },
   "ids": {
-    "user1_id": "4ad4ee35-0d44-4e19-9289-d68e8a9cc9af",
-    "user2_id": "90db6e21-c034-483a-bcd7-3f84cb85e252",
-    "publication_id": "87935306-6399-47b2-ba79-3218d6e328b7",
-    "comment_id": "d5b314c7-90b2-4c59-be18-bc90b3079b9f",
-    "media_id": "56c8c234-9876-47f5-ba13-db5078a972c5"
+    "user1_id": "22b8cd4f-e5f6-4a7f-bf37-25993f7ce2b1",
+    "user2_id": "05f104ab-ef32-47b2-bd35-5c825e8d1db8",
+    "publication_id": "006e0ebe-3f3b-4f5b-a91b-27c2020675c9",
+    "comment_id": "d6b09f20-8300-41ef-a776-6465da5c4762",
+    "media_id": "9f5baaa4-ece8-48f8-9687-7dfd5ac35ea8"
   }
 }

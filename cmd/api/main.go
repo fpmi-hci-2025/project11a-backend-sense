@@ -12,6 +12,7 @@ import (
 
 	httpDelivery "sense-backend/internal/delivery/http"
 	authHandler "sense-backend/internal/delivery/http/handlers"
+	"sense-backend/internal/delivery/http/middleware"
 	"sense-backend/internal/infrastructure/ai"
 	"sense-backend/internal/infrastructure/database"
 	"sense-backend/internal/infrastructure/jwt"
@@ -88,9 +89,12 @@ func main() {
 	router := httpDelivery.NewRouter(validator, appLogger, tokenSvc, authH, publicationH, commentH, profileH, feedH, mediaH, aiH)
 	muxRouter := router.SetupRoutes()
 
+	// Apply CORS middleware
+	handler := middleware.CORSMiddleware(muxRouter)
+
 	// Setup server
 	srv := &http.Server{
-		Handler:      muxRouter,
+		Handler:      handler,
 		Addr:         ":" + fmt.Sprintf("%d", cfg.Server.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,

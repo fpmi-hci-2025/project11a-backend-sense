@@ -237,3 +237,5 @@ func TestAIEndpoints(c *client.Client) error {
 	fmt.Println("\n=== AI Endpoints Testing Complete ===")
 	return nil
 }
+
+
