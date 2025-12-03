@@ -15,18 +15,24 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+const (
+	testPubID1 = "pub-1"
+	testPubID2 = "pub-2"
+	testPubID3 = "pub-3"
+)
+
 func createTestPublication() *domain.Publication {
 	content := "Test publication"
 	return &domain.Publication{
-		ID:             "pub-123",
-		AuthorID:       "user-123",
-		Type:           domain.PublicationTypePost,
-		Content:        &content,
+		ID:              "pub-123",
+		AuthorID:        "user-123",
+		Type:            domain.PublicationTypePost,
+		Content:         &content,
 		PublicationDate: time.Now(),
-		Visibility:     domain.VisibilityTypePublic,
-		LikesCount:     0,
-		CommentsCount:  0,
-		SavedCount:     0,
+		Visibility:      domain.VisibilityTypePublic,
+		LikesCount:      0,
+		CommentsCount:   0,
+		SavedCount:      0,
 	}
 }
 
@@ -40,28 +46,28 @@ func TestGetRecommendations_Success(t *testing.T) {
 	uc := NewUseCase(aiClientMock, recommendationRepo, publicationRepo)
 
 	recommendResp := &aiClient.RecommendResponse{
-		Publications: []string{"pub-1", "pub-2", "pub-3"},
+		Publications: []string{testPubID1, testPubID2, testPubID3},
 	}
 
 	pub1 := createTestPublication()
-	pub1.ID = "pub-1"
+	pub1.ID = testPubID1
 	pub2 := createTestPublication()
-	pub2.ID = "pub-2"
+	pub2.ID = testPubID2
 
 	aiClientMock.EXPECT().
 		Recommend(gomock.Any(), "user-123").
 		Return(recommendResp, nil)
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-1").
+		GetByID(gomock.Any(), testPubID1).
 		Return(pub1, nil)
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-2").
+		GetByID(gomock.Any(), testPubID2).
 		Return(pub2, nil)
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-3").
+		GetByID(gomock.Any(), testPubID3).
 		Return(nil, errors.New("not found"))
 
 	recommendationRepo.EXPECT().
@@ -92,19 +98,19 @@ func TestGetRecommendations_AIError_FallbackToDatabase(t *testing.T) {
 	// Expect fallback to database
 	recommendationRepo.EXPECT().
 		GetPublicationIDs(gomock.Any(), "user-123", 10).
-		Return([]string{"pub-1", "pub-2"}, nil)
+		Return([]string{testPubID1, testPubID2}, nil)
 
 	pub1 := createTestPublication()
-	pub1.ID = "pub-1"
+	pub1.ID = testPubID1
 	pub2 := createTestPublication()
-	pub2.ID = "pub-2"
+	pub2.ID = testPubID2
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-1").
+		GetByID(gomock.Any(), testPubID1).
 		Return(pub1, nil)
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-2").
+		GetByID(gomock.Any(), testPubID2).
 		Return(pub2, nil)
 
 	result, err := uc.GetRecommendations(context.Background(), "user-123", 10, nil)
@@ -148,7 +154,7 @@ func TestGetRecommendations_PublicationNotFound(t *testing.T) {
 	uc := NewUseCase(aiClientMock, recommendationRepo, publicationRepo)
 
 	recommendResp := &aiClient.RecommendResponse{
-		Publications: []string{"pub-1", "pub-2"},
+		Publications: []string{testPubID1, testPubID2},
 	}
 
 	aiClientMock.EXPECT().
@@ -156,11 +162,11 @@ func TestGetRecommendations_PublicationNotFound(t *testing.T) {
 		Return(recommendResp, nil)
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-1").
+		GetByID(gomock.Any(), testPubID1).
 		Return(nil, errors.New("not found"))
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-2").
+		GetByID(gomock.Any(), testPubID2).
 		Return(nil, errors.New("not found"))
 
 	result, err := uc.GetRecommendations(context.Background(), "user-123", 10, nil)
@@ -178,27 +184,27 @@ func TestGetRecommendationsFeed_Success(t *testing.T) {
 	publicationRepo := mocks.NewMockPublicationRepository(ctrl)
 	uc := NewUseCase(aiClientMock, recommendationRepo, publicationRepo)
 
-	publicationIDs := []string{"pub-1", "pub-2", "pub-3"}
+	publicationIDs := []string{testPubID1, testPubID2, testPubID3}
 
 	recommendationRepo.EXPECT().
 		GetPublicationIDs(gomock.Any(), "user-123", 10).
 		Return(publicationIDs, nil)
 
 	pub1 := createTestPublication()
-	pub1.ID = "pub-1"
+	pub1.ID = testPubID1
 	pub2 := createTestPublication()
-	pub2.ID = "pub-2"
+	pub2.ID = testPubID2
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-1").
+		GetByID(gomock.Any(), testPubID1).
 		Return(pub1, nil)
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-2").
+		GetByID(gomock.Any(), testPubID2).
 		Return(pub2, nil)
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-3").
+		GetByID(gomock.Any(), testPubID3).
 		Return(nil, errors.New("not found"))
 
 	result, total, err := uc.GetRecommendationsFeed(context.Background(), "user-123", 10, 0, nil)
@@ -217,7 +223,7 @@ func TestGetRecommendationsFeed_WithOffset(t *testing.T) {
 	publicationRepo := mocks.NewMockPublicationRepository(ctrl)
 	uc := NewUseCase(aiClientMock, recommendationRepo, publicationRepo)
 
-	publicationIDs := []string{"pub-1", "pub-2", "pub-3", "pub-4", "pub-5"}
+	publicationIDs := []string{testPubID1, testPubID2, testPubID3, "pub-4", "pub-5"}
 
 	// limit + offset = 2 + 2 = 4
 	recommendationRepo.EXPECT().
@@ -225,12 +231,12 @@ func TestGetRecommendationsFeed_WithOffset(t *testing.T) {
 		Return(publicationIDs, nil)
 
 	pub3 := createTestPublication()
-	pub3.ID = "pub-3"
+	pub3.ID = testPubID3
 	pub4 := createTestPublication()
 	pub4.ID = "pub-4"
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-3").
+		GetByID(gomock.Any(), testPubID3).
 		Return(pub3, nil)
 
 	publicationRepo.EXPECT().
@@ -348,4 +354,3 @@ func TestPurifyText_Modified(t *testing.T) {
 	assert.False(t, result.IsClean)
 	assert.Equal(t, 0.85, result.Confidence)
 }
-
