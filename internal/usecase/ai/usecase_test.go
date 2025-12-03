@@ -75,7 +75,7 @@ func TestGetRecommendations_Success(t *testing.T) {
 	assert.Len(t, result, 2)
 }
 
-func TestGetRecommendations_AIError(t *testing.T) {
+func TestGetRecommendations_AIError_FallbackToDatabase(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -84,15 +84,58 @@ func TestGetRecommendations_AIError(t *testing.T) {
 	publicationRepo := mocks.NewMockPublicationRepository(ctrl)
 	uc := NewUseCase(aiClientMock, recommendationRepo, publicationRepo)
 
+	// When AI service fails, usecase falls back to database recommendations
 	aiClientMock.EXPECT().
 		Recommend(gomock.Any(), "user-123").
 		Return(nil, errors.New("AI service error"))
+
+	// Expect fallback to database
+	recommendationRepo.EXPECT().
+		GetPublicationIDs(gomock.Any(), "user-123", 10).
+		Return([]string{"pub-1", "pub-2"}, nil)
+
+	pub1 := createTestPublication()
+	pub1.ID = "pub-1"
+	pub2 := createTestPublication()
+	pub2.ID = "pub-2"
+
+	publicationRepo.EXPECT().
+		GetByID(gomock.Any(), "pub-1").
+		Return(pub1, nil)
+
+	publicationRepo.EXPECT().
+		GetByID(gomock.Any(), "pub-2").
+		Return(pub2, nil)
+
+	result, err := uc.GetRecommendations(context.Background(), "user-123", 10, nil)
+
+	require.NoError(t, err)
+	assert.Len(t, result, 2)
+}
+
+func TestGetRecommendations_AIAndDatabaseError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	aiClientMock := mocks.NewMockClientInterface(ctrl)
+	recommendationRepo := mocks.NewMockRecommendationRepository(ctrl)
+	publicationRepo := mocks.NewMockPublicationRepository(ctrl)
+	uc := NewUseCase(aiClientMock, recommendationRepo, publicationRepo)
+
+	// When AI service fails and database also fails, return error
+	aiClientMock.EXPECT().
+		Recommend(gomock.Any(), "user-123").
+		Return(nil, errors.New("AI service error"))
+
+	recommendationRepo.EXPECT().
+		GetPublicationIDs(gomock.Any(), "user-123", 10).
+		Return(nil, errors.New("database error"))
 
 	result, err := uc.GetRecommendations(context.Background(), "user-123", 10, nil)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "failed to get AI recommendations")
+	assert.Contains(t, err.Error(), "failed to get recommendations")
 }
 
 func TestGetRecommendations_PublicationNotFound(t *testing.T) {
