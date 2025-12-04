@@ -150,9 +150,12 @@ jobs:
           docker pull $REGISTRY/$IMAGE_NAME:${GITHUB_SHA:0:7}
 
           # Run a new container from a new image
-          # Using host network mode to access postgres on localhost
+          # Connect to the docker-compose network where postgres is running
+          # Mount config.docker.yaml which has host=postgres for docker network
           docker run -d \
             --restart always \
-            --network host \
+            --network project11a-backend-sense_default \
+            -p 8080:8080 \
+            -v ~/project11a-backend-sense/config.docker.yaml:/app/config.yaml \
             --name $CONTAINER_NAME \
             $REGISTRY/$IMAGE_NAME:${GITHUB_SHA:0:7}
