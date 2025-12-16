@@ -136,17 +136,19 @@ func (r *userRepository) GetStats(ctx context.Context, userID string) (*domain.U
 		return nil, err
 	}
 	
-	// Get likes received
+	// Get likes received (count all likes on user's publications)
 	err = r.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(likes_count), 0) FROM publications WHERE author_id = $1
+		SELECT COUNT(*) FROM publication_likes 
+		WHERE publication_id IN (SELECT id FROM publications WHERE author_id = $1)
 	`, userID).Scan(&stats.LikesReceived)
 	if err != nil {
 		return nil, err
 	}
 	
-	// Get comments received
+	// Get comments received (count all comments on user's publications)
 	err = r.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(comments_count), 0) FROM publications WHERE author_id = $1
+		SELECT COUNT(*) FROM comments 
+		WHERE publication_id IN (SELECT id FROM publications WHERE author_id = $1)
 	`, userID).Scan(&stats.CommentsReceived)
 	if err != nil {
 		return nil, err

@@ -27,22 +27,17 @@ func (r *commentRepository) Create(ctx context.Context, comment *domain.Comment)
 		comment.ID, comment.PublicationID, comment.ParentID, comment.AuthorID,
 		comment.Text, comment.CreatedAt,
 	)
-	if err != nil {
-		return err
-	}
-
-	// Update comments count
-	_, err = r.pool.Exec(ctx, `
-		UPDATE publications SET comments_count = comments_count + 1 WHERE id = $1
-	`, comment.PublicationID)
 	return err
 }
 
 func (r *commentRepository) GetByID(ctx context.Context, id string) (*domain.Comment, error) {
 	query := `
-		SELECT id, publication_id, parent_id, author_id, text, created_at, likes_count
-		FROM comments
-		WHERE id = $1
+		SELECT c.id, c.publication_id, c.parent_id, c.author_id, c.text, c.created_at,
+		       COALESCE(likes.count, 0) as likes_count
+		FROM comments c
+		LEFT JOIN (SELECT comment_id, COUNT(*) as count FROM comment_likes GROUP BY comment_id) likes 
+		  ON c.id = likes.comment_id
+		WHERE c.id = $1
 	`
 	
 	var comment domain.Comment
@@ -68,10 +63,13 @@ func (r *commentRepository) GetByPublication(ctx context.Context, publicationID 
 
 	// Get comments
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, publication_id, parent_id, author_id, text, created_at, likes_count
-		FROM comments
-		WHERE publication_id = $1
-		ORDER BY created_at ASC
+		SELECT c.id, c.publication_id, c.parent_id, c.author_id, c.text, c.created_at,
+		       COALESCE(likes.count, 0) as likes_count
+		FROM comments c
+		LEFT JOIN (SELECT comment_id, COUNT(*) as count FROM comment_likes GROUP BY comment_id) likes 
+		  ON c.id = likes.comment_id
+		WHERE c.publication_id = $1
+		ORDER BY c.created_at ASC
 		LIMIT $2 OFFSET $3
 	`, publicationID, limit, offset)
 	if err != nil {
@@ -106,25 +104,8 @@ func (r *commentRepository) Update(ctx context.Context, comment *domain.Comment)
 }
 
 func (r *commentRepository) Delete(ctx context.Context, id string) error {
-	// Get publication_id before deleting
-	var publicationID string
-	err := r.pool.QueryRow(ctx, `
-		SELECT publication_id FROM comments WHERE id = $1
-	`, id).Scan(&publicationID)
-	if err != nil {
-		return err
-	}
-
 	// Delete comment
-	_, err = r.pool.Exec(ctx, `DELETE FROM comments WHERE id = $1`, id)
-	if err != nil {
-		return err
-	}
-
-	// Update comments count
-	_, err = r.pool.Exec(ctx, `
-		UPDATE publications SET comments_count = comments_count - 1 WHERE id = $1
-	`, publicationID)
+	_, err := r.pool.Exec(ctx, `DELETE FROM comments WHERE id = $1`, id)
 	return err
 }
 
@@ -154,24 +135,12 @@ func (r *commentRepository) Like(ctx context.Context, userID, commentID string) 
 		if err != nil {
 			return false, err
 		}
-		_, err = tx.Exec(ctx, `
-			UPDATE comments SET likes_count = likes_count - 1 WHERE id = $1
-		`, commentID)
-		if err != nil {
-			return false, err
-		}
 		return false, tx.Commit(ctx)
 	} else {
 		// Like
 		_, err = tx.Exec(ctx, `
 			INSERT INTO comment_likes (user_id, comment_id) VALUES ($1, $2)
 		`, userID, commentID)
-		if err != nil {
-			return false, err
-		}
-		_, err = tx.Exec(ctx, `
-			UPDATE comments SET likes_count = likes_count + 1 WHERE id = $1
-		`, commentID)
 		if err != nil {
 			return false, err
 		}
@@ -190,7 +159,7 @@ func (r *commentRepository) IsLiked(ctx context.Context, userID, commentID strin
 func (r *commentRepository) GetLikesCount(ctx context.Context, commentID string) (int, error) {
 	var count int
 	err := r.pool.QueryRow(ctx, `
-		SELECT likes_count FROM comments WHERE id = $1
+		SELECT COUNT(*) FROM comment_likes WHERE comment_id = $1
 	`, commentID).Scan(&count)
 	return count, err
 }
