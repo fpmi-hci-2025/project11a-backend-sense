@@ -32,19 +32,21 @@ func NewUseCase(
 
 // CreateRequest represents create publication request
 type CreateRequest struct {
-	Type       domain.PublicationType  `json:"type" validate:"required"`
-	Content    *string                 `json:"content,omitempty" validate:"omitempty,max=10000"`
-	Source     *string                 `json:"source,omitempty" validate:"omitempty,max=200"`
-	Visibility domain.VisibilityType   `json:"visibility" validate:"required"`
-	MediaIDs   []string                `json:"media_ids,omitempty"`
+	Type       domain.PublicationType `json:"type" validate:"required"`
+	Title      string                 `json:"title" validate:"required,max=500"`
+	Content    *string                `json:"content,omitempty" validate:"omitempty,max=10000"`
+	Source     *string                `json:"source,omitempty" validate:"omitempty,max=200"`
+	Visibility domain.VisibilityType  `json:"visibility" validate:"required"`
+	MediaIDs   []string               `json:"media_ids,omitempty"`
 }
 
 // UpdateRequest represents update publication request
 type UpdateRequest struct {
-	Content    *string                 `json:"content,omitempty" validate:"max=10000"`
-	Source     *string                 `json:"source,omitempty" validate:"max=200"`
-	Visibility *domain.VisibilityType  `json:"visibility,omitempty"`
-	MediaIDs   []string                `json:"media_ids,omitempty"`
+	Title      *string                `json:"title,omitempty" validate:"omitempty,max=500"`
+	Content    *string                `json:"content,omitempty" validate:"max=10000"`
+	Source     *string                `json:"source,omitempty" validate:"max=200"`
+	Visibility *domain.VisibilityType `json:"visibility,omitempty"`
+	MediaIDs   []string               `json:"media_ids,omitempty"`
 }
 
 // Create creates a new publication
@@ -58,16 +60,17 @@ func (uc *UseCase) Create(ctx context.Context, authorID string, req *CreateReque
 	}
 
 	publication := &domain.Publication{
-		ID:             uuid.New().String(),
-		AuthorID:       authorID,
-		Type:           req.Type,
-		Content:        req.Content,
-		Source:         req.Source,
+		ID:              uuid.New().String(),
+		AuthorID:        authorID,
+		Type:            req.Type,
+		Title:           req.Title,
+		Content:         req.Content,
+		Source:          req.Source,
 		PublicationDate: time.Now(),
-		Visibility:     req.Visibility,
-		LikesCount:     0,
-		CommentsCount:  0,
-		SavedCount:     0,
+		Visibility:      req.Visibility,
+		LikesCount:      0,
+		CommentsCount:   0,
+		SavedCount:      0,
 	}
 
 	if err := uc.publicationRepo.Create(ctx, publication, req.MediaIDs); err != nil {
@@ -77,9 +80,9 @@ func (uc *UseCase) Create(ctx context.Context, authorID string, req *CreateReque
 	return publication, nil
 }
 
-// Get retrieves publication by ID
-func (uc *UseCase) Get(ctx context.Context, id string) (*domain.Publication, error) {
-	return uc.publicationRepo.GetByID(ctx, id)
+// Get retrieves publication by ID with like status for viewer
+func (uc *UseCase) Get(ctx context.Context, id string, viewerUserID *string) (*domain.PublicationWithLikeStatus, error) {
+	return uc.publicationRepo.GetByIDWithLikeStatus(ctx, id, viewerUserID)
 }
 
 // Update updates publication
@@ -93,6 +96,9 @@ func (uc *UseCase) Update(ctx context.Context, id, userID string, req *UpdateReq
 		return nil, errors.New("forbidden: not the author")
 	}
 
+	if req.Title != nil {
+		publication.Title = *req.Title
+	}
 	if req.Content != nil {
 		publication.Content = req.Content
 	}

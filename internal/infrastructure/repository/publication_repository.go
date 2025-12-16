@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"sense-backend/internal/domain"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type publicationRepository struct {
@@ -30,11 +31,11 @@ func (r *publicationRepository) Create(ctx context.Context, publication *domain.
 
 	// Insert publication
 	query := `
-		INSERT INTO publications (id, author_id, type, content, source, publication_date, visibility)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO publications (id, author_id, type, title, content, source, publication_date, visibility)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
 	_, err = tx.Exec(ctx, query,
-		publication.ID, publication.AuthorID, publication.Type, publication.Content,
+		publication.ID, publication.AuthorID, publication.Type, publication.Title, publication.Content,
 		publication.Source, publication.PublicationDate, publication.Visibility,
 	)
 	if err != nil {
@@ -57,15 +58,15 @@ func (r *publicationRepository) Create(ctx context.Context, publication *domain.
 
 func (r *publicationRepository) GetByID(ctx context.Context, id string) (*domain.Publication, error) {
 	query := `
-		SELECT id, author_id, type, content, source, publication_date, visibility,
+		SELECT id, author_id, type, title, content, source, publication_date, visibility,
 		       likes_count, comments_count, saved_count
 		FROM publications
 		WHERE id = $1
 	`
-	
+
 	var pub domain.Publication
 	err := r.pool.QueryRow(ctx, query, id).Scan(
-		&pub.ID, &pub.AuthorID, &pub.Type, &pub.Content, &pub.Source,
+		&pub.ID, &pub.AuthorID, &pub.Type, &pub.Title, &pub.Content, &pub.Source,
 		&pub.PublicationDate, &pub.Visibility, &pub.LikesCount,
 		&pub.CommentsCount, &pub.SavedCount,
 	)
@@ -73,6 +74,27 @@ func (r *publicationRepository) GetByID(ctx context.Context, id string) (*domain
 		return nil, fmt.Errorf("publication not found")
 	}
 	return &pub, err
+}
+
+func (r *publicationRepository) GetByIDWithLikeStatus(ctx context.Context, id string, viewerUserID *string) (*domain.PublicationWithLikeStatus, error) {
+	pub, err := r.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &domain.PublicationWithLikeStatus{
+		Publication: *pub,
+		IsLiked:     false,
+	}
+
+	if viewerUserID != nil {
+		isLiked, err := r.IsLiked(ctx, *viewerUserID, id)
+		if err == nil {
+			result.IsLiked = isLiked
+		}
+	}
+
+	return result, nil
 }
 
 func (r *publicationRepository) Update(ctx context.Context, publication *domain.Publication, mediaIDs []string) error {
@@ -87,11 +109,11 @@ func (r *publicationRepository) Update(ctx context.Context, publication *domain.
 	// Update publication
 	query := `
 		UPDATE publications
-		SET content = $2, source = $3, visibility = $4
+		SET title = $2, content = $3, source = $4, visibility = $5
 		WHERE id = $1
 	`
 	_, err = tx.Exec(ctx, query,
-		publication.ID, publication.Content, publication.Source, publication.Visibility,
+		publication.ID, publication.Title, publication.Content, publication.Source, publication.Visibility,
 	)
 	if err != nil {
 		return err
@@ -122,34 +144,43 @@ func (r *publicationRepository) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, filters *domain.FeedFilters, limit, offset int) ([]*domain.Publication, int, error) {
+func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, filters *domain.FeedFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
 	where := []string{"1=1"}
 	args := []interface{}{}
 	argIndex := 1
 
+	// userID parameter index for LEFT JOIN (will be set if userID is provided)
+	var userIDArgIndex int
+
+	if userID != nil {
+		userIDArgIndex = argIndex
+		args = append(args, *userID)
+		argIndex++
+	}
+
 	if filters != nil {
 		if filters.Type != nil {
-			where = append(where, fmt.Sprintf("type = $%d", argIndex))
+			where = append(where, fmt.Sprintf("p.type = $%d", argIndex))
 			args = append(args, *filters.Type)
 			argIndex++
 		}
 		if filters.Visibility != nil {
-			where = append(where, fmt.Sprintf("visibility = $%d", argIndex))
+			where = append(where, fmt.Sprintf("p.visibility = $%d", argIndex))
 			args = append(args, *filters.Visibility)
 			argIndex++
 		}
 		if filters.AuthorID != nil {
-			where = append(where, fmt.Sprintf("author_id = $%d", argIndex))
+			where = append(where, fmt.Sprintf("p.author_id = $%d", argIndex))
 			args = append(args, *filters.AuthorID)
 			argIndex++
 		}
 		if filters.DateFrom != nil {
-			where = append(where, fmt.Sprintf("publication_date >= $%d", argIndex))
+			where = append(where, fmt.Sprintf("p.publication_date >= $%d", argIndex))
 			args = append(args, *filters.DateFrom)
 			argIndex++
 		}
 		if filters.DateTo != nil {
-			where = append(where, fmt.Sprintf("publication_date <= $%d", argIndex))
+			where = append(where, fmt.Sprintf("p.publication_date <= $%d", argIndex))
 			args = append(args, *filters.DateTo)
 			argIndex++
 		}
@@ -157,32 +188,45 @@ func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, fil
 
 	// If userID provided, filter by visibility (public or community for logged in users)
 	if userID != nil {
-		where = append(where, fmt.Sprintf("(visibility = 'public' OR visibility = 'community' OR author_id = $%d)", argIndex))
-		args = append(args, *userID)
-		argIndex++
+		where = append(where, fmt.Sprintf("(p.visibility = 'public' OR p.visibility = 'community' OR p.author_id = $%d)", userIDArgIndex))
 	} else {
-		where = append(where, "visibility = 'public'")
+		where = append(where, "p.visibility = 'public'")
 	}
 
 	whereClause := strings.Join(where, " AND ")
 
 	// Get total
 	var total int
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM publications WHERE %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM publications p WHERE %s", whereClause)
 	err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Get publications
-	query := fmt.Sprintf(`
-		SELECT id, author_id, type, content, source, publication_date, visibility,
-		       likes_count, comments_count, saved_count
-		FROM publications
-		WHERE %s
-		ORDER BY publication_date DESC
-		LIMIT $%d OFFSET $%d
-	`, whereClause, argIndex, argIndex+1)
+	// Build query with LEFT JOIN for like status
+	var query string
+	if userID != nil {
+		query = fmt.Sprintf(`
+			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
+			       p.likes_count, p.comments_count, p.saved_count,
+			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked
+			FROM publications p
+			LEFT JOIN publication_likes pl ON p.id = pl.publication_id AND pl.user_id = $%d
+			WHERE %s
+			ORDER BY p.publication_date DESC
+			LIMIT $%d OFFSET $%d
+		`, userIDArgIndex, whereClause, argIndex, argIndex+1)
+	} else {
+		query = fmt.Sprintf(`
+			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
+			       p.likes_count, p.comments_count, p.saved_count,
+			       false as is_liked
+			FROM publications p
+			WHERE %s
+			ORDER BY p.publication_date DESC
+			LIMIT $%d OFFSET $%d
+		`, whereClause, argIndex, argIndex+1)
+	}
 	args = append(args, limit, offset)
 
 	rows, err := r.pool.Query(ctx, query, args...)
@@ -191,13 +235,13 @@ func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, fil
 	}
 	defer rows.Close()
 
-	var publications []*domain.Publication
+	var publications []*domain.PublicationWithLikeStatus
 	for rows.Next() {
-		var pub domain.Publication
+		var pub domain.PublicationWithLikeStatus
 		err := rows.Scan(
-			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Content, &pub.Source,
+			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Title, &pub.Content, &pub.Source,
 			&pub.PublicationDate, &pub.Visibility, &pub.LikesCount,
-			&pub.CommentsCount, &pub.SavedCount,
+			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -208,60 +252,98 @@ func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, fil
 	return publications, total, rows.Err()
 }
 
-func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.Publication, int, error) {
-	where := []string{"author_id = $1"}
-	args := []interface{}{authorID}
-	argIndex := 2
-
+func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string, viewerUserID *string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
+	// Build WHERE for count query (author + filters; no viewer to keep placeholders dense)
+	countWhere := []string{"p.author_id = $1"}
+	countArgs := []interface{}{authorID}
+	countIdx := 2
 	if filters != nil {
 		if filters.Type != nil {
-			where = append(where, fmt.Sprintf("type = $%d", argIndex))
-			args = append(args, *filters.Type)
-			argIndex++
+			countWhere = append(countWhere, fmt.Sprintf("p.type = $%d", countIdx))
+			countArgs = append(countArgs, *filters.Type)
+			countIdx++
 		}
 		if filters.Visibility != nil {
-			where = append(where, fmt.Sprintf("visibility = $%d", argIndex))
-			args = append(args, *filters.Visibility)
-			argIndex++
+			countWhere = append(countWhere, fmt.Sprintf("p.visibility = $%d", countIdx))
+			countArgs = append(countArgs, *filters.Visibility)
+			countIdx++
 		}
 	}
+	countWhereClause := strings.Join(countWhere, " AND ")
 
-	whereClause := strings.Join(where, " AND ")
-
-	// Get total
 	var total int
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM publications WHERE %s", whereClause)
-	err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total)
-	if err != nil {
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM publications p WHERE %s", countWhereClause)
+	if err := r.pool.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Get publications
-	query := fmt.Sprintf(`
-		SELECT id, author_id, type, content, source, publication_date, visibility,
-		       likes_count, comments_count, saved_count
-		FROM publications
-		WHERE %s
-		ORDER BY publication_date DESC
-		LIMIT $%d OFFSET $%d
-	`, whereClause, argIndex, argIndex+1)
-	args = append(args, limit, offset)
+	// Build WHERE for main query (author + optional viewer + filters)
+	queryWhere := []string{"p.author_id = $1"}
+	queryArgs := []interface{}{authorID}
+	queryIdx := 2
+	viewerUserIDArgIndex := 0
+	if viewerUserID != nil {
+		viewerUserIDArgIndex = queryIdx
+		queryArgs = append(queryArgs, *viewerUserID)
+		queryIdx++
+	}
+	if filters != nil {
+		if filters.Type != nil {
+			queryWhere = append(queryWhere, fmt.Sprintf("p.type = $%d", queryIdx))
+			queryArgs = append(queryArgs, *filters.Type)
+			queryIdx++
+		}
+		if filters.Visibility != nil {
+			queryWhere = append(queryWhere, fmt.Sprintf("p.visibility = $%d", queryIdx))
+			queryArgs = append(queryArgs, *filters.Visibility)
+			queryIdx++
+		}
+	}
+	queryWhereClause := strings.Join(queryWhere, " AND ")
 
-	rows, err := r.pool.Query(ctx, query, args...)
+	limitPlaceholder := queryIdx
+	offsetPlaceholder := queryIdx + 1
+
+	var query string
+	if viewerUserID != nil {
+		query = fmt.Sprintf(`
+			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
+			       p.likes_count, p.comments_count, p.saved_count,
+			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked
+			FROM publications p
+			LEFT JOIN publication_likes pl ON p.id = pl.publication_id AND pl.user_id = $%d
+			WHERE %s
+			ORDER BY p.publication_date DESC
+			LIMIT $%d OFFSET $%d
+		`, viewerUserIDArgIndex, queryWhereClause, limitPlaceholder, offsetPlaceholder)
+	} else {
+		query = fmt.Sprintf(`
+			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
+			       p.likes_count, p.comments_count, p.saved_count,
+			       false as is_liked
+			FROM publications p
+			WHERE %s
+			ORDER BY p.publication_date DESC
+			LIMIT $%d OFFSET $%d
+		`, queryWhereClause, limitPlaceholder, offsetPlaceholder)
+	}
+
+	queryArgs = append(queryArgs, limit, offset)
+
+	rows, err := r.pool.Query(ctx, query, queryArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 
-	var publications []*domain.Publication
+	var publications []*domain.PublicationWithLikeStatus
 	for rows.Next() {
-		var pub domain.Publication
-		err := rows.Scan(
-			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Content, &pub.Source,
+		var pub domain.PublicationWithLikeStatus
+		if err := rows.Scan(
+			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Title, &pub.Content, &pub.Source,
 			&pub.PublicationDate, &pub.Visibility, &pub.LikesCount,
-			&pub.CommentsCount, &pub.SavedCount,
-		)
-		if err != nil {
+			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked,
+		); err != nil {
 			return nil, 0, err
 		}
 		publications = append(publications, &pub)
@@ -414,7 +496,7 @@ func (r *publicationRepository) IsSaved(ctx context.Context, userID, publication
 	return exists, err
 }
 
-func (r *publicationRepository) GetSaved(ctx context.Context, userID string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.SavedPublication, int, error) {
+func (r *publicationRepository) GetSaved(ctx context.Context, userID string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.SavedPublicationWithLikeStatus, int, error) {
 	where := []string{"si.user_id = $1"}
 	args := []interface{}{userID}
 	argIndex := 2
@@ -446,13 +528,15 @@ func (r *publicationRepository) GetSaved(ctx context.Context, userID string, fil
 		return nil, 0, err
 	}
 
-	// Get saved publications
+	// Get saved publications with like status (userID is the viewer)
 	query := fmt.Sprintf(`
-		SELECT p.id, p.author_id, p.type, p.content, p.source, p.publication_date, p.visibility,
+		SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
 		       p.likes_count, p.comments_count, p.saved_count,
-		       si.note, si.added_at
+		       si.note, si.added_at,
+		       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked
 		FROM saved_items si
 		INNER JOIN publications p ON si.publication_id = p.id
+		LEFT JOIN publication_likes pl ON p.id = pl.publication_id AND pl.user_id = $1
 		WHERE %s
 		ORDER BY si.added_at DESC
 		LIMIT $%d OFFSET $%d
@@ -465,13 +549,13 @@ func (r *publicationRepository) GetSaved(ctx context.Context, userID string, fil
 	}
 	defer rows.Close()
 
-	var saved []*domain.SavedPublication
+	var saved []*domain.SavedPublicationWithLikeStatus
 	for rows.Next() {
-		var sp domain.SavedPublication
+		var sp domain.SavedPublicationWithLikeStatus
 		err := rows.Scan(
-			&sp.ID, &sp.AuthorID, &sp.Type, &sp.Content, &sp.Source,
+			&sp.ID, &sp.AuthorID, &sp.Type, &sp.Title, &sp.Content, &sp.Source,
 			&sp.PublicationDate, &sp.Visibility, &sp.LikesCount,
-			&sp.CommentsCount, &sp.SavedCount, &sp.SavedNote, &sp.SavedAt,
+			&sp.CommentsCount, &sp.SavedCount, &sp.SavedNote, &sp.SavedAt, &sp.IsLiked,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -482,49 +566,85 @@ func (r *publicationRepository) GetSaved(ctx context.Context, userID string, fil
 	return saved, total, rows.Err()
 }
 
-func (r *publicationRepository) Search(ctx context.Context, query string, filters *domain.SearchFilters, limit, offset int) ([]*domain.Publication, int, error) {
+func (r *publicationRepository) Search(ctx context.Context, query string, viewerUserID *string, filters *domain.SearchFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
 	searchQuery := `%` + query + `%`
-	where := []string{"content ILIKE $1"}
-	args := []interface{}{searchQuery}
-	argIndex := 2
+	where := []string{"(p.content ILIKE $1 OR p.title ILIKE $1)"}
+	filterValues := []interface{}{}
+
+	// viewerUserID placeholder (used only in JOIN, not in WHERE)
+	viewerUserIDArgIndex := 0
+
+	// Filters start after search query and optional viewer placeholder
+	filterStartIndex := 2
+	if viewerUserID != nil {
+		viewerUserIDArgIndex = filterStartIndex
+		filterStartIndex++
+	}
 
 	if filters != nil {
 		if filters.Type != nil {
-			where = append(where, fmt.Sprintf("type = $%d", argIndex))
-			args = append(args, *filters.Type)
-			argIndex++
+			where = append(where, fmt.Sprintf("p.type = $%d", filterStartIndex))
+			filterValues = append(filterValues, *filters.Type)
+			filterStartIndex++
 		}
 		if filters.Visibility != nil {
-			where = append(where, fmt.Sprintf("visibility = $%d", argIndex))
-			args = append(args, *filters.Visibility)
-			argIndex++
+			where = append(where, fmt.Sprintf("p.visibility = $%d", filterStartIndex))
+			filterValues = append(filterValues, *filters.Visibility)
+			filterStartIndex++
 		}
 		if filters.AuthorID != nil {
-			where = append(where, fmt.Sprintf("author_id = $%d", argIndex))
-			args = append(args, *filters.AuthorID)
-			argIndex++
+			where = append(where, fmt.Sprintf("p.author_id = $%d", filterStartIndex))
+			filterValues = append(filterValues, *filters.AuthorID)
+			filterStartIndex++
 		}
 	}
 
 	whereClause := strings.Join(where, " AND ")
 
-	// Get total
+	// Count query args (exclude viewerUserID to keep placeholders dense)
+	countArgs := []interface{}{searchQuery}
+	countArgs = append(countArgs, filterValues...)
 	var total int
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM publications WHERE %s", whereClause)
-	err := r.pool.QueryRow(ctx, countQuery, args...).Scan(&total)
-	if err != nil {
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM publications p WHERE %s", whereClause)
+	if err := r.pool.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Get publications
-	queryStr := fmt.Sprintf(`
-		SELECT id, author_id, type, content, source, publication_date, visibility,
-		       likes_count, comments_count, saved_count
-		FROM publications
-		WHERE %s
-		ORDER BY publication_date DESC
-		LIMIT $%d OFFSET $%d
-	`, whereClause, argIndex, argIndex+1)
+	// Main query args: search query, optional viewer, filters
+	args := []interface{}{searchQuery}
+	if viewerUserID != nil {
+		viewerUserIDArgIndex = len(args) + 1 // 2
+		args = append(args, *viewerUserID)
+	}
+	args = append(args, filterValues...)
+
+	limitPlaceholder := len(args) + 1
+	offsetPlaceholder := len(args) + 2
+
+	var queryStr string
+	if viewerUserID != nil {
+		queryStr = fmt.Sprintf(`
+			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
+			       p.likes_count, p.comments_count, p.saved_count,
+			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked
+			FROM publications p
+			LEFT JOIN publication_likes pl ON p.id = pl.publication_id AND pl.user_id = $%d
+			WHERE %s
+			ORDER BY p.publication_date DESC
+			LIMIT $%d OFFSET $%d
+		`, viewerUserIDArgIndex, whereClause, limitPlaceholder, offsetPlaceholder)
+	} else {
+		queryStr = fmt.Sprintf(`
+			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
+			       p.likes_count, p.comments_count, p.saved_count,
+			       false as is_liked
+			FROM publications p
+			WHERE %s
+			ORDER BY p.publication_date DESC
+			LIMIT $%d OFFSET $%d
+		`, whereClause, limitPlaceholder, offsetPlaceholder)
+	}
+
 	args = append(args, limit, offset)
 
 	rows, err := r.pool.Query(ctx, queryStr, args...)
@@ -533,15 +653,14 @@ func (r *publicationRepository) Search(ctx context.Context, query string, filter
 	}
 	defer rows.Close()
 
-	var publications []*domain.Publication
+	var publications []*domain.PublicationWithLikeStatus
 	for rows.Next() {
-		var pub domain.Publication
-		err := rows.Scan(
-			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Content, &pub.Source,
+		var pub domain.PublicationWithLikeStatus
+		if err := rows.Scan(
+			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Title, &pub.Content, &pub.Source,
 			&pub.PublicationDate, &pub.Visibility, &pub.LikesCount,
-			&pub.CommentsCount, &pub.SavedCount,
-		)
-		if err != nil {
+			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked,
+		); err != nil {
 			return nil, 0, err
 		}
 		publications = append(publications, &pub)
@@ -572,4 +691,3 @@ func (r *publicationRepository) GetMediaIDs(ctx context.Context, publicationID s
 
 	return mediaIDs, rows.Err()
 }
-

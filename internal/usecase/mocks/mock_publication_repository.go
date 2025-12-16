@@ -70,19 +70,19 @@ func (mr *MockPublicationRepositoryMockRecorder) Delete(ctx, id any) *gomock.Cal
 }
 
 // GetByAuthor mocks base method.
-func (m *MockPublicationRepository) GetByAuthor(ctx context.Context, authorID string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.Publication, int, error) {
+func (m *MockPublicationRepository) GetByAuthor(ctx context.Context, authorID string, viewerUserID *string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByAuthor", ctx, authorID, filters, limit, offset)
-	ret0, _ := ret[0].([]*domain.Publication)
+	ret := m.ctrl.Call(m, "GetByAuthor", ctx, authorID, viewerUserID, filters, limit, offset)
+	ret0, _ := ret[0].([]*domain.PublicationWithLikeStatus)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
 // GetByAuthor indicates an expected call of GetByAuthor.
-func (mr *MockPublicationRepositoryMockRecorder) GetByAuthor(ctx, authorID, filters, limit, offset any) *gomock.Call {
+func (mr *MockPublicationRepositoryMockRecorder) GetByAuthor(ctx, authorID, viewerUserID, filters, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByAuthor", reflect.TypeOf((*MockPublicationRepository)(nil).GetByAuthor), ctx, authorID, filters, limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByAuthor", reflect.TypeOf((*MockPublicationRepository)(nil).GetByAuthor), ctx, authorID, viewerUserID, filters, limit, offset)
 }
 
 // GetByID mocks base method.
@@ -100,11 +100,26 @@ func (mr *MockPublicationRepositoryMockRecorder) GetByID(ctx, id any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockPublicationRepository)(nil).GetByID), ctx, id)
 }
 
+// GetByIDWithLikeStatus mocks base method.
+func (m *MockPublicationRepository) GetByIDWithLikeStatus(ctx context.Context, id string, viewerUserID *string) (*domain.PublicationWithLikeStatus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByIDWithLikeStatus", ctx, id, viewerUserID)
+	ret0, _ := ret[0].(*domain.PublicationWithLikeStatus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByIDWithLikeStatus indicates an expected call of GetByIDWithLikeStatus.
+func (mr *MockPublicationRepositoryMockRecorder) GetByIDWithLikeStatus(ctx, id, viewerUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByIDWithLikeStatus", reflect.TypeOf((*MockPublicationRepository)(nil).GetByIDWithLikeStatus), ctx, id, viewerUserID)
+}
+
 // GetFeed mocks base method.
-func (m *MockPublicationRepository) GetFeed(ctx context.Context, userID *string, filters *domain.FeedFilters, limit, offset int) ([]*domain.Publication, int, error) {
+func (m *MockPublicationRepository) GetFeed(ctx context.Context, userID *string, filters *domain.FeedFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFeed", ctx, userID, filters, limit, offset)
-	ret0, _ := ret[0].([]*domain.Publication)
+	ret0, _ := ret[0].([]*domain.PublicationWithLikeStatus)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -163,10 +178,10 @@ func (mr *MockPublicationRepositoryMockRecorder) GetMediaIDs(ctx, publicationID 
 }
 
 // GetSaved mocks base method.
-func (m *MockPublicationRepository) GetSaved(ctx context.Context, userID string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.SavedPublication, int, error) {
+func (m *MockPublicationRepository) GetSaved(ctx context.Context, userID string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.SavedPublicationWithLikeStatus, int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSaved", ctx, userID, filters, limit, offset)
-	ret0, _ := ret[0].([]*domain.SavedPublication)
+	ret0, _ := ret[0].([]*domain.SavedPublicationWithLikeStatus)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -238,19 +253,19 @@ func (mr *MockPublicationRepositoryMockRecorder) Save(ctx, userID, publicationID
 }
 
 // Search mocks base method.
-func (m *MockPublicationRepository) Search(ctx context.Context, query string, filters *domain.SearchFilters, limit, offset int) ([]*domain.Publication, int, error) {
+func (m *MockPublicationRepository) Search(ctx context.Context, query string, viewerUserID *string, filters *domain.SearchFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Search", ctx, query, filters, limit, offset)
-	ret0, _ := ret[0].([]*domain.Publication)
+	ret := m.ctrl.Call(m, "Search", ctx, query, viewerUserID, filters, limit, offset)
+	ret0, _ := ret[0].([]*domain.PublicationWithLikeStatus)
 	ret1, _ := ret[1].(int)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
 // Search indicates an expected call of Search.
-func (mr *MockPublicationRepositoryMockRecorder) Search(ctx, query, filters, limit, offset any) *gomock.Call {
+func (mr *MockPublicationRepositoryMockRecorder) Search(ctx, query, viewerUserID, filters, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockPublicationRepository)(nil).Search), ctx, query, filters, limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockPublicationRepository)(nil).Search), ctx, query, viewerUserID, filters, limit, offset)
 }
 
 // Unsave mocks base method.

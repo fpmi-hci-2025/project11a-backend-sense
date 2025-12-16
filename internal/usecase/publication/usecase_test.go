@@ -17,15 +17,23 @@ import (
 func createTestPublication() *domain.Publication {
 	content := "Test publication content"
 	return &domain.Publication{
-		ID:             "pub-123",
-		AuthorID:       "user-123",
-		Type:           domain.PublicationTypePost,
-		Content:        &content,
+		ID:              "pub-123",
+		AuthorID:        "user-123",
+		Type:            domain.PublicationTypePost,
+		Title:           "Test Title",
+		Content:         &content,
 		PublicationDate: time.Now(),
-		Visibility:     domain.VisibilityTypePublic,
-		LikesCount:     0,
-		CommentsCount:  0,
-		SavedCount:     0,
+		Visibility:      domain.VisibilityTypePublic,
+		LikesCount:      0,
+		CommentsCount:   0,
+		SavedCount:      0,
+	}
+}
+
+func createTestPublicationWithLikeStatus() *domain.PublicationWithLikeStatus {
+	return &domain.PublicationWithLikeStatus{
+		Publication: *createTestPublication(),
+		IsLiked:     false,
 	}
 }
 
@@ -40,6 +48,7 @@ func TestCreate_Success(t *testing.T) {
 
 	req := &CreateRequest{
 		Type:       domain.PublicationTypePost,
+		Title:      "Test Title",
 		Content:    stringPtr("Test content"),
 		Visibility: domain.VisibilityTypePublic,
 		MediaIDs:   []string{},
@@ -50,6 +59,7 @@ func TestCreate_Success(t *testing.T) {
 		DoAndReturn(func(ctx context.Context, pub *domain.Publication, mediaIDs []string) error {
 			assert.Equal(t, "user-123", pub.AuthorID)
 			assert.Equal(t, domain.PublicationTypePost, pub.Type)
+			assert.Equal(t, "Test Title", pub.Title)
 			return nil
 		})
 
@@ -58,6 +68,7 @@ func TestCreate_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, pub)
 	assert.Equal(t, domain.PublicationTypePost, pub.Type)
+	assert.Equal(t, "Test Title", pub.Title)
 }
 
 func TestCreate_WithMedia(t *testing.T) {
@@ -71,6 +82,7 @@ func TestCreate_WithMedia(t *testing.T) {
 
 	req := &CreateRequest{
 		Type:       domain.PublicationTypePost,
+		Title:      "Test Title",
 		Content:    stringPtr("Test content"),
 		Visibility: domain.VisibilityTypePublic,
 		MediaIDs:   []string{"media-1", "media-2"},
@@ -105,6 +117,7 @@ func TestCreate_MediaNotOwned(t *testing.T) {
 
 	req := &CreateRequest{
 		Type:       domain.PublicationTypePost,
+		Title:      "Test Title",
 		Content:    stringPtr("Test content"),
 		Visibility: domain.VisibilityTypePublic,
 		MediaIDs:   []string{"media-1"},
@@ -130,13 +143,14 @@ func TestGet_Success(t *testing.T) {
 	mediaRepo := mocks.NewMockMediaRepository(ctrl)
 	uc := NewUseCase(publicationRepo, userRepo, mediaRepo)
 
-	pub := createTestPublication()
+	pubWithStatus := createTestPublicationWithLikeStatus()
+	viewerUserID := "user-123"
 
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "pub-123").
-		Return(pub, nil)
+		GetByIDWithLikeStatus(gomock.Any(), "pub-123", &viewerUserID).
+		Return(pubWithStatus, nil)
 
-	result, err := uc.Get(context.Background(), "pub-123")
+	result, err := uc.Get(context.Background(), "pub-123", &viewerUserID)
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
@@ -152,11 +166,13 @@ func TestGet_NotFound(t *testing.T) {
 	mediaRepo := mocks.NewMockMediaRepository(ctrl)
 	uc := NewUseCase(publicationRepo, userRepo, mediaRepo)
 
+	viewerUserID := "user-123"
+
 	publicationRepo.EXPECT().
-		GetByID(gomock.Any(), "nonexistent").
+		GetByIDWithLikeStatus(gomock.Any(), "nonexistent", &viewerUserID).
 		Return(nil, errors.New("not found"))
 
-	result, err := uc.Get(context.Background(), "nonexistent")
+	result, err := uc.Get(context.Background(), "nonexistent", &viewerUserID)
 
 	assert.Error(t, err)
 	assert.Nil(t, result)

@@ -71,7 +71,8 @@ func (h *FeedHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	limit, offset := getPagination(r)
 	filters := h.parsePublicationFilters(r)
 
-	publications, total, err := h.feedUC.GetUserFeed(r.Context(), userID, filters, limit, offset)
+	// Pass userID as viewerUserID to get like status
+	publications, total, err := h.feedUC.GetUserFeed(r.Context(), userID, &userID, filters, limit, offset)
 	if err != nil {
 		WriteError(w, http.StatusBadRequest, "validation_error", err.Error(), nil)
 		return
@@ -113,12 +114,19 @@ func (h *FeedHandler) GetSaved(w http.ResponseWriter, r *http.Request) {
 // GetUser handles GET /feed/user/{id}
 func (h *FeedHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	userID := vars["id"]
+	authorID := vars["id"]
+
+	// Get viewer user ID for like status (may be empty if not authenticated)
+	viewerUserID := middleware.GetUserID(r.Context())
+	var viewerUserIDPtr *string
+	if viewerUserID != "" {
+		viewerUserIDPtr = &viewerUserID
+	}
 
 	limit, offset := getPagination(r)
 	filters := h.parsePublicationFilters(r)
 
-	publications, total, err := h.feedUC.GetUserFeed(r.Context(), userID, filters, limit, offset)
+	publications, total, err := h.feedUC.GetUserFeed(r.Context(), authorID, viewerUserIDPtr, filters, limit, offset)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, "not_found", "Пользователь не найден", nil)
 		return

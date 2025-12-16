@@ -23,6 +23,7 @@ func TestPublicationEndpoints(c *client.Client) error {
 	fmt.Println("\n1. Testing POST /publication/create (post)")
 	createReq := map[string]interface{}{
 		"type":       "post",
+		"title":      "Test Post Title",
 		"content":    "This is a test post publication",
 		"visibility": "public",
 	}
@@ -65,6 +66,7 @@ func TestPublicationEndpoints(c *client.Client) error {
 	fmt.Println("\n2. Testing POST /publication/create (article)")
 	createReq2 := map[string]interface{}{
 		"type":       "article",
+		"title":      "Test Article Title",
 		"content":    "This is a test article with longer content. It contains multiple sentences and paragraphs.",
 		"visibility": "public",
 	}
@@ -88,6 +90,7 @@ func TestPublicationEndpoints(c *client.Client) error {
 	fmt.Println("\n3. Testing POST /publication/create (quote)")
 	createReq3 := map[string]interface{}{
 		"type":       "quote",
+		"title":      "Inspirational Quote",
 		"content":    "The only way to do great work is to love what you do.",
 		"source":     "Steve Jobs",
 		"visibility": "public",
@@ -141,6 +144,7 @@ func TestPublicationEndpoints(c *client.Client) error {
 	// Test 6: Update publication
 	fmt.Printf("\n6. Testing PUT /publication/%s\n", data.IDs.PublicationID)
 	updateReq := map[string]interface{}{
+		"title":      "Updated Title",
 		"content":    "Updated content for the publication",
 		"visibility": "public",
 	}
@@ -223,8 +227,8 @@ func TestPublicationEndpoints(c *client.Client) error {
 			ID       string `json:"id"`
 			Username string `json:"username"`
 		} `json:"items"`
-		Total int `json:"total"`
-		Limit int `json:"limit"`
+		Total  int `json:"total"`
+		Limit  int `json:"limit"`
 		Offset int `json:"offset"`
 	}
 
@@ -294,4 +298,3 @@ func TestPublicationEndpoints(c *client.Client) error {
 	fmt.Println("\n=== Publication Endpoints Testing Complete ===")
 	return nil
 }
-

@@ -20,15 +20,23 @@ const (
 func createTestPublication() *domain.Publication {
 	content := "Test publication"
 	return &domain.Publication{
-		ID:             "pub-123",
-		AuthorID:       "user-123",
-		Type:           domain.PublicationTypePost,
-		Content:        &content,
+		ID:              "pub-123",
+		AuthorID:        "user-123",
+		Type:            domain.PublicationTypePost,
+		Title:           "Test Title",
+		Content:         &content,
 		PublicationDate: time.Now(),
-		Visibility:     domain.VisibilityTypePublic,
-		LikesCount:     0,
-		CommentsCount:  0,
-		SavedCount:     0,
+		Visibility:      domain.VisibilityTypePublic,
+		LikesCount:      0,
+		CommentsCount:   0,
+		SavedCount:      0,
+	}
+}
+
+func createTestPublicationWithLikeStatus() *domain.PublicationWithLikeStatus {
+	return &domain.PublicationWithLikeStatus{
+		Publication: *createTestPublication(),
+		IsLiked:     false,
 	}
 }
 
@@ -62,17 +70,18 @@ func TestSearchPublications_Success(t *testing.T) {
 	uc := NewUseCase(publicationRepo, userRepo, tagRepo)
 
 	query := "test query"
+	viewerUserID := "user-123"
 	filters := &domain.SearchFilters{}
 
-	publications := []*domain.Publication{
-		createTestPublication(),
+	publications := []*domain.PublicationWithLikeStatus{
+		createTestPublicationWithLikeStatus(),
 	}
 
 	publicationRepo.EXPECT().
-		Search(gomock.Any(), query, filters, 10, 0).
+		Search(gomock.Any(), query, &viewerUserID, filters, 10, 0).
 		Return(publications, 1, nil)
 
-	result, total, err := uc.SearchPublications(context.Background(), query, filters, 10, 0)
+	result, total, err := uc.SearchPublications(context.Background(), query, &viewerUserID, filters, 10, 0)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -89,6 +98,7 @@ func TestSearchPublications_WithFilters(t *testing.T) {
 	uc := NewUseCase(publicationRepo, userRepo, tagRepo)
 
 	query := "test query"
+	viewerUserID := "user-123"
 	pubType := domain.PublicationTypeArticle
 	visibility := domain.VisibilityTypePublic
 	authorID := "user-123"
@@ -99,15 +109,15 @@ func TestSearchPublications_WithFilters(t *testing.T) {
 		AuthorID:   &authorID,
 	}
 
-	publications := []*domain.Publication{
-		createTestPublication(),
+	publications := []*domain.PublicationWithLikeStatus{
+		createTestPublicationWithLikeStatus(),
 	}
 
 	publicationRepo.EXPECT().
-		Search(gomock.Any(), query, filters, 20, 10).
+		Search(gomock.Any(), query, &viewerUserID, filters, 20, 10).
 		Return(publications, 1, nil)
 
-	result, total, err := uc.SearchPublications(context.Background(), query, filters, 20, 10)
+	result, total, err := uc.SearchPublications(context.Background(), query, &viewerUserID, filters, 20, 10)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 1)

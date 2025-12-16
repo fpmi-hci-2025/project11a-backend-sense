@@ -22,15 +22,22 @@ const (
 
 // Publication represents a publication in the system
 type Publication struct {
-	ID             string          `json:"id"`
-	AuthorID       string          `json:"author_id"`
-	Type           PublicationType `json:"type"`
-	Content        *string         `json:"content,omitempty"`
-	Source         *string         `json:"source,omitempty"`
-	PublicationDate time.Time      `json:"publication_date"`
-	Visibility     VisibilityType  `json:"visibility"`
-	LikesCount     int             `json:"likes_count"`
-	CommentsCount  int             `json:"comments_count"`
-	SavedCount     int             `json:"saved_count"`
+	ID              string          `json:"id"`
+	AuthorID        string          `json:"author_id"`
+	Type            PublicationType `json:"type"`
+	Title           string          `json:"title"`
+	Content         *string         `json:"content,omitempty"`
+	Source          *string         `json:"source,omitempty"`
+	PublicationDate time.Time       `json:"publication_date"`
+	Visibility      VisibilityType  `json:"visibility"`
+	LikesCount      int             `json:"likes_count"`
+	CommentsCount   int             `json:"comments_count"`
+	SavedCount      int             `json:"saved_count"`
+}
+
+// PublicationWithLikeStatus represents a publication with user's like status
+type PublicationWithLikeStatus struct {
+	Publication
+	IsLiked bool `json:"is_liked"`
 }
 
