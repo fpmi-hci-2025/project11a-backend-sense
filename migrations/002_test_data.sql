@@ -22,25 +22,25 @@ INSERT INTO users (id, username, email, phone, icon_url, description, role, pass
 ('00000000-0000-0000-0000-000000000007', 'reader_only', 'reader@example.com', NULL, NULL, 'Reader account with no publications', 'reader', '$2a$10$yHrCLvWjsEs4cQf7fYjzmOHfb34i7IA/bLawLEzwWZcgZUUXq5Qe.', '2024-03-15 08:30:00+00', 0, 3, '{"publications": 0, "likes": 5, "comments": 2}');
 
 -- PUBLICATIONS (20 publications of different types)
-INSERT INTO publications (id, author_id, type, content, source, publication_date, visibility, likes_count, comments_count, saved_count) VALUES
+INSERT INTO publications (id, author_id, type, title, content, source, publication_date, visibility) VALUES
 -- Quotes
-('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'quote', 'The only way to do great work is to love what you do.', 'Steve Jobs', '2024-01-20 10:00:00+00', 'public', 45, 8, 12),
-('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003', 'quote', 'Innovation distinguishes between a leader and a follower.', 'Steve Jobs', '2024-01-25 14:30:00+00', 'public', 32, 5, 7),
-('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'quote', 'Stay hungry, stay foolish.', 'Steve Jobs', '2024-02-01 09:15:00+00', 'community', 28, 4, 9),
-('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', 'quote', 'Life is what happens to you while you''re busy making other plans.', 'John Lennon', '2024-02-15 16:20:00+00', 'public', 19, 3, 5),
-('10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', 'quote', 'The future belongs to those who believe in the beauty of their dreams.', 'Eleanor Roosevelt', '2024-02-20 11:45:00+00', 'private', 5, 1, 2),
+('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'quote', 'The only way to do great work is to love what you do.', 'The only way to do great work is to love what you do.', 'Steve Jobs', '2024-01-20 10:00:00+00', 'public'),
+('10000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000003', 'quote', 'Innovation distinguishes between a leader and a follower.', 'Innovation distinguishes between a leader and a follower.', 'Steve Jobs', '2024-01-25 14:30:00+00', 'public'),
+('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'quote', 'Stay hungry, stay foolish.', 'Stay hungry, stay foolish.', 'Steve Jobs', '2024-02-01 09:15:00+00', 'community'),
+('10000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', 'quote', 'Life is what happens to you while you''re busy making other plans.', 'Life is what happens to you while you''re busy making other plans.', 'John Lennon', '2024-02-15 16:20:00+00', 'public'),
+('10000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', 'quote', 'The future belongs to those who believe in the beauty of their dreams.', 'The future belongs to those who believe in the beauty of their dreams.', 'Eleanor Roosevelt', '2024-02-20 11:45:00+00', 'private'),
 
 -- Posts
-('10000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000002', 'post', 'Just finished reading an amazing book about software architecture. The principles of clean code are more important than ever in today''s fast-paced development environment.', NULL, '2024-02-05 13:00:00+00', 'public', 67, 15, 23),
-('10000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000003', 'post', 'Working on a new project that combines AI with traditional web development. Excited to share more details soon!', NULL, '2024-02-10 10:30:00+00', 'public', 54, 12, 18),
-('10000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000004', 'post', 'Today I learned something new about database optimization. Always keep learning!', NULL, '2024-02-18 15:00:00+00', 'community', 23, 6, 8),
-('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000005', 'post', 'Sharing my thoughts on the latest technology trends. What do you think?', NULL, '2024-02-22 09:20:00+00', 'public', 34, 9, 11),
-('10000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000006', 'post', 'My first post here. Looking forward to engaging with the community!', NULL, '2024-03-05 12:00:00+00', 'public', 8, 2, 1),
-('10000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000002', 'post', 'Community post: Let''s discuss best practices for API design.', NULL, '2024-03-10 14:15:00+00', 'community', 41, 11, 14),
-('10000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000003', 'post', 'Private thoughts on my current project progress.', NULL, '2024-03-12 16:30:00+00', 'private', 2, 0, 1),
+('10000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000002', 'post', 'Amazing Book on Software Architecture', 'Just finished reading an amazing book about software architecture. The principles of clean code are more important than ever in today''s fast-paced development environment.', NULL, '2024-02-05 13:00:00+00', 'public'),
+('10000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000003', 'post', 'New AI + Web Development Project', 'Working on a new project that combines AI with traditional web development. Excited to share more details soon!', NULL, '2024-02-10 10:30:00+00', 'public'),
+('10000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000004', 'post', 'Database Optimization Learning', 'Today I learned something new about database optimization. Always keep learning!', NULL, '2024-02-18 15:00:00+00', 'community'),
+('10000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000005', 'post', 'Latest Technology Trends', 'Sharing my thoughts on the latest technology trends. What do you think?', NULL, '2024-02-22 09:20:00+00', 'public'),
+('10000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000006', 'post', 'My First Post', 'My first post here. Looking forward to engaging with the community!', NULL, '2024-03-05 12:00:00+00', 'public'),
+('10000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000002', 'post', 'Best Practices for API Design', 'Community post: Let''s discuss best practices for API design.', NULL, '2024-03-10 14:15:00+00', 'community'),
+('10000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000003', 'post', 'Project Progress Thoughts', 'Private thoughts on my current project progress.', NULL, '2024-03-12 16:30:00+00', 'private'),
 
 -- Articles
-('10000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000002', 'article', 'Introduction to Microservices Architecture
+('10000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000002', 'article', 'Introduction to Microservices Architecture', 'Introduction to Microservices Architecture
 
 Microservices architecture has become increasingly popular in recent years. This article explores the key concepts, benefits, and challenges of building applications using microservices.
 
@@ -54,8 +54,8 @@ Challenges:
 - Distributed system complexity
 - Data consistency
 - Network latency
-- Service coordination', NULL, '2024-01-30 10:00:00+00', 'public', 89, 24, 45),
-('10000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000003', 'article', 'Best Practices for REST API Design
+- Service coordination', NULL, '2024-01-30 10:00:00+00', 'public'),
+('10000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000003', 'article', 'Best Practices for REST API Design', 'Best Practices for REST API Design
 
 Designing a good REST API requires careful consideration of several factors. This article covers the most important principles.
 
@@ -63,52 +63,52 @@ Designing a good REST API requires careful consideration of several factors. Thi
 2. Follow RESTful conventions
 3. Implement proper error handling
 4. Use appropriate status codes
-5. Version your API', NULL, '2024-02-12 11:30:00+00', 'public', 76, 18, 32),
-('10000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000001', 'article', 'Security Best Practices for Web Applications
+5. Version your API', NULL, '2024-02-12 11:30:00+00', 'public'),
+('10000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000001', 'article', 'Security Best Practices for Web Applications', 'Security Best Practices for Web Applications
 
-Security should be a top priority in web development. This article discusses essential security practices.', NULL, '2024-02-25 13:45:00+00', 'community', 56, 14, 21),
-('10000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000004', 'article', 'Getting Started with Go Programming
+Security should be a top priority in web development. This article discusses essential security practices.', NULL, '2024-02-25 13:45:00+00', 'community'),
+('10000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000004', 'article', 'Getting Started with Go Programming', 'Getting Started with Go Programming
 
-Go is a powerful programming language developed by Google. This beginner-friendly guide covers the basics.', NULL, '2024-03-01 09:00:00+00', 'public', 43, 10, 15),
-('10000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000002', 'article', 'Database Optimization Techniques
+Go is a powerful programming language developed by Google. This beginner-friendly guide covers the basics.', NULL, '2024-03-01 09:00:00+00', 'public'),
+('10000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000002', 'article', 'Database Optimization Techniques', 'Database Optimization Techniques
 
-Learn how to optimize your database queries and improve application performance.', NULL, '2024-03-08 15:20:00+00', 'public', 61, 16, 28),
-('10000000-0000-0000-0000-000000000018', '00000000-0000-0000-0000-000000000005', 'article', 'My Personal Development Journey
+Learn how to optimize your database queries and improve application performance.', NULL, '2024-03-08 15:20:00+00', 'public'),
+('10000000-0000-0000-0000-000000000018', '00000000-0000-0000-0000-000000000005', 'article', 'My Personal Development Journey', 'My Personal Development Journey
 
-A reflection on my growth as a developer over the past year.', NULL, '2024-03-14 10:10:00+00', 'private', 3, 1, 1),
-('10000000-0000-0000-0000-000000000019', '00000000-0000-0000-0000-000000000003', 'article', 'Community Article: Open Source Contributions
+A reflection on my growth as a developer over the past year.', NULL, '2024-03-14 10:10:00+00', 'private'),
+('10000000-0000-0000-0000-000000000019', '00000000-0000-0000-0000-000000000003', 'article', 'Open Source Contributions', 'Community Article: Open Source Contributions
 
-How contributing to open source projects can benefit your career.', NULL, '2024-03-15 12:00:00+00', 'community', 38, 9, 12),
-('10000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000002', 'article', 'Advanced Topics in Distributed Systems
+How contributing to open source projects can benefit your career.', NULL, '2024-03-15 12:00:00+00', 'community'),
+('10000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000002', 'article', 'Advanced Topics in Distributed Systems', 'Advanced Topics in Distributed Systems
 
-Exploring complex concepts in distributed computing.', NULL, '2024-03-18 14:30:00+00', 'public', 72, 20, 35);
+Exploring complex concepts in distributed computing.', NULL, '2024-03-18 14:30:00+00', 'public');
 
 -- COMMENTS (mix of top-level and nested comments)
-INSERT INTO comments (id, publication_id, parent_id, author_id, text, created_at, likes_count) VALUES
+INSERT INTO comments (id, publication_id, parent_id, author_id, text, created_at) VALUES
 -- Comments on publication 1
-('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', NULL, '00000000-0000-0000-0000-000000000004', 'Great quote! Very inspiring.', '2024-01-20 11:00:00+00', 5),
-('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', NULL, '00000000-0000-0000-0000-000000000005', 'I completely agree with this sentiment.', '2024-01-20 12:30:00+00', 3),
-('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000006', 'Same here! This quote motivates me every day.', '2024-01-20 13:15:00+00', 2),
+('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', NULL, '00000000-0000-0000-0000-000000000004', 'Great quote! Very inspiring.', '2024-01-20 11:00:00+00'),
+('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', NULL, '00000000-0000-0000-0000-000000000005', 'I completely agree with this sentiment.', '2024-01-20 12:30:00+00'),
+('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000006', 'Same here! This quote motivates me every day.', '2024-01-20 13:15:00+00'),
 
 -- Comments on publication 6 (post)
-('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000006', NULL, '00000000-0000-0000-0000-000000000003', 'Which book did you read? I''m always looking for recommendations.', '2024-02-05 14:00:00+00', 8),
-('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000006', NULL, '00000000-0000-0000-0000-000000000004', 'Clean Code by Robert Martin is a classic!', '2024-02-05 15:30:00+00', 6),
-('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'I recommend "Designing Data-Intensive Applications" as well.', '2024-02-05 16:00:00+00', 4),
-('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000005', 'Thanks for the recommendation!', '2024-02-05 17:00:00+00', 1),
+('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000006', NULL, '00000000-0000-0000-0000-000000000003', 'Which book did you read? I''m always looking for recommendations.', '2024-02-05 14:00:00+00'),
+('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000006', NULL, '00000000-0000-0000-0000-000000000004', 'Clean Code by Robert Martin is a classic!', '2024-02-05 15:30:00+00'),
+('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000002', 'I recommend "Designing Data-Intensive Applications" as well.', '2024-02-05 16:00:00+00'),
+('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000005', 'Thanks for the recommendation!', '2024-02-05 17:00:00+00'),
 
 -- Comments on publication 13 (article)
-('20000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000013', NULL, '00000000-0000-0000-0000-000000000003', 'Excellent article! Microservices are indeed complex but worth it.', '2024-01-30 11:00:00+00', 12),
-('20000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000013', NULL, '00000000-0000-0000-0000-000000000004', 'I have a question about service coordination. Can you elaborate?', '2024-01-30 12:00:00+00', 3),
-('20000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000013', '20000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000002', 'Service coordination can be handled using message queues or event-driven architectures.', '2024-01-30 13:00:00+00', 7),
-('20000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000013', NULL, '00000000-0000-0000-0000-000000000005', 'Great overview of the topic!', '2024-01-30 14:00:00+00', 2),
+('20000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000013', NULL, '00000000-0000-0000-0000-000000000003', 'Excellent article! Microservices are indeed complex but worth it.', '2024-01-30 11:00:00+00'),
+('20000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000013', NULL, '00000000-0000-0000-0000-000000000004', 'I have a question about service coordination. Can you elaborate?', '2024-01-30 12:00:00+00'),
+('20000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000013', '20000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000002', 'Service coordination can be handled using message queues or event-driven architectures.', '2024-01-30 13:00:00+00'),
+('20000000-0000-0000-0000-000000000011', '10000000-0000-0000-0000-000000000013', NULL, '00000000-0000-0000-0000-000000000005', 'Great overview of the topic!', '2024-01-30 14:00:00+00'),
 
 -- Comments on publication 7
-('20000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000007', NULL, '00000000-0000-0000-0000-000000000004', 'Looking forward to seeing what you build!', '2024-02-10 11:00:00+00', 4),
-('20000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000007', NULL, '00000000-0000-0000-0000-000000000006', 'AI + web development sounds interesting!', '2024-02-10 12:00:00+00', 2),
+('20000000-0000-0000-0000-000000000012', '10000000-0000-0000-0000-000000000007', NULL, '00000000-0000-0000-0000-000000000004', 'Looking forward to seeing what you build!', '2024-02-10 11:00:00+00'),
+('20000000-0000-0000-0000-000000000013', '10000000-0000-0000-0000-000000000007', NULL, '00000000-0000-0000-0000-000000000006', 'AI + web development sounds interesting!', '2024-02-10 12:00:00+00'),
 
 -- Comments on publication 14
-('20000000-0000-0000-0000-000000000014', '10000000-0000-0000-0000-000000000014', NULL, '00000000-0000-0000-0000-000000000002', 'Very practical advice. Thanks for sharing!', '2024-02-12 12:00:00+00', 9),
-('20000000-0000-0000-0000-000000000015', '10000000-0000-0000-0000-000000000014', NULL, '00000000-0000-0000-0000-000000000005', 'I''ve been following these practices and they work great.', '2024-02-12 13:00:00+00', 5);
+('20000000-0000-0000-0000-000000000014', '10000000-0000-0000-0000-000000000014', NULL, '00000000-0000-0000-0000-000000000002', 'Very practical advice. Thanks for sharing!', '2024-02-12 12:00:00+00'),
+('20000000-0000-0000-0000-000000000015', '10000000-0000-0000-0000-000000000014', NULL, '00000000-0000-0000-0000-000000000005', 'I''ve been following these practices and they work great.', '2024-02-12 13:00:00+00');
 
 -- PUBLICATION LIKES
 INSERT INTO publication_likes (id, user_id, publication_id, created_at) VALUES

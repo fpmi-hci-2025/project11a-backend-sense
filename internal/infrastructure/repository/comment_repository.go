@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"sense-backend/internal/domain"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type commentRepository struct {
@@ -39,7 +40,7 @@ func (r *commentRepository) GetByID(ctx context.Context, id string) (*domain.Com
 		  ON c.id = likes.comment_id
 		WHERE c.id = $1
 	`
-	
+
 	var comment domain.Comment
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&comment.ID, &comment.PublicationID, &comment.ParentID, &comment.AuthorID,
@@ -163,4 +164,3 @@ func (r *commentRepository) GetLikesCount(ctx context.Context, commentID string)
 	`, commentID).Scan(&count)
 	return count, err
 }
-

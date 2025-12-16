@@ -37,13 +37,11 @@ CREATE TABLE IF NOT EXISTS publications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   author_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   type publication_type NOT NULL,
+  title text NOT NULL DEFAULT '',
   content text,
   source text,
   publication_date timestamptz NOT NULL DEFAULT now(),
-  visibility visibility_type NOT NULL DEFAULT 'public',
-  likes_count int NOT NULL DEFAULT 0 CHECK (likes_count >= 0),
-  comments_count int NOT NULL DEFAULT 0 CHECK (comments_count >= 0),
-  saved_count int NOT NULL DEFAULT 0 CHECK (saved_count >= 0)
+  visibility visibility_type NOT NULL DEFAULT 'public'
 );
 CREATE INDEX IF NOT EXISTS idx_publications_author ON publications(author_id);
 CREATE INDEX IF NOT EXISTS idx_publications_pubdate ON publications(publication_date);
@@ -77,8 +75,7 @@ CREATE TABLE IF NOT EXISTS comments (
   parent_id uuid REFERENCES comments(id) ON DELETE SET NULL,
   author_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   text text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  likes_count integer NOT NULL DEFAULT 0 CHECK (likes_count >= 0)
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_comments_pub_created ON comments(publication_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_id);
