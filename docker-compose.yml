@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sense-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sense_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: sense-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml
+      - ./migrations:/app/migrations
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=sense_db
+    restart: unless-stopped
+
+  swagger:
+    image: swaggerapi/swagger-ui:latest
+    container_name: sense-swagger
+    ports:
+      - "9090:8080"
+    volumes:
+      - ./docs/openapi.yaml:/tmp/openapi.yaml
+    environment:
+      - SWAGGER_JSON=/tmp/openapi.yaml
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+

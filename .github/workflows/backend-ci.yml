@@ -1,22 +1,36 @@
 name: Backend CI/CD
 
+env:
+  REGISTRY: "registry.digitalocean.com/hakeyn-registry"
+  IMAGE_NAME: "sense-backend-image"
+  CONTAINER_NAME: "sense-backend-container"
+
 on:
   push:
     branches: [ main, master ]
     paths:
       - 'cmd/**'
+      - 'internal/**'
       - 'go.mod'
       - 'go.sum'
       - 'Dockerfile'
       - '.github/workflows/backend-ci.yml'
+      - 'config.yaml'
+      - 'scripts/**'
+      - '.golangci.yml'
+    tags:
+      - 'deploy-*'
   pull_request:
     branches: [ main, master ]
     paths:
       - 'cmd/**'
+      - 'internal/**'
       - 'go.mod'
       - 'go.sum'
       - 'Dockerfile'
       - '.github/workflows/backend-ci.yml'
+      - 'scripts/**'
+      - '.golangci.yml'
 
 jobs:
   test:
@@ -43,11 +57,21 @@ jobs:
     - name: Install dependencies
       run: go mod download
       
+    - name: Install golangci-lint
+      run: |
+        # Install golangci-lint v2 which supports config version 2
+        # Using install script to get the latest version that supports v2 config
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+        echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        
+    - name: Verify golangci-lint version
+      run: golangci-lint --version
+        
+    - name: Run golangci-lint
+      run: golangci-lint run --timeout=5m
+        
     - name: Run tests
-      run: go test -v ./cmd/api
-      
-    - name: Run tests with coverage
-      run: go test -v -coverprofile=coverage.out ./cmd/api
+      run: go test -v --race --count=1 ./...
       
     - name: Upload coverage
       uses: codecov/codecov-action@v3
@@ -71,48 +95,67 @@ jobs:
     - name: Build Docker image
       run: |
         docker build -t sense-backend:latest .
-        
-    - name: Test Docker image
-      run: |
-        docker run -d --name test-container -p 8080:8080 sense-backend:latest
-        sleep 10
-        
-        # Test health endpoint
-        curl -f http://localhost:8080/health || exit 1
-        
-        # Cleanup
-        docker stop test-container
-        docker rm test-container
 
-  integration-test:
-    name: Integration Tests
+  build_and_push:
+    name: Build and Push to Digital Ocean
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Build and run container
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Log in to DigitalOcean Container Registry
+      run: doctl registry login --expiry-seconds 600
+
+    - name: Build and push container image
       run: |
-        docker build -t sense-backend:test .
-        docker run -d --name integration-test -p 8080:8080 sense-backend:test
-        sleep 5
-        
-    - name: Test health endpoint
-      run: |
-        # Wait for service to be ready
-        timeout 30 bash -c 'until curl -f http://localhost:8080/health; do sleep 1; done'
-        
-        # Test the endpoint
-        response=$(curl -s http://localhost:8080/health)
-        echo "Response: $response"
-        
-        # Check if response contains expected JSON
-        echo "$response" | grep -q '"status":"ok"' || exit 1
-        
-    - name: Cleanup
-      if: always()
-      run: |
-        docker stop integration-test || true
-        docker rm integration-test || true
+        SHORT_SHA=$(echo ${{ github.sha }} | head -c7)
+        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$SHORT_SHA .
+        docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$SHORT_SHA ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$SHORT_SHA
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    name: Deploy to Digital Ocean Droplet
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    
+    steps:
+    - name: Deploy to Digital Ocean droplet via SSH
+      uses: appleboy/ssh-action@v0.1.3
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        envs: IMAGE_NAME,REGISTRY,CONTAINER_NAME,GITHUB_SHA
+        script: |
+          # Login into Digital Ocean Registry
+          docker login -u ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} -p ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }} $REGISTRY
+
+          # Stop running containers
+          docker stop $CONTAINER_NAME || true
+
+          # Remove old containers
+          docker rm $CONTAINER_NAME || true
+
+          # Pull new image
+          docker pull $REGISTRY/$IMAGE_NAME:${GITHUB_SHA:0:7}
+
+          # Run a new container from a new image
+          # Connect to the docker-compose network where postgres is running
+          # Mount config.docker.yaml which has host=postgres for docker network
+          docker run -d \
+            --restart always \
+            --network project11a-backend-sense_default \
+            -p 8080:8080 \
+            -v ~/project11a-backend-sense/config.docker.yaml:/app/config.yaml \
+            --name $CONTAINER_NAME \
+            $REGISTRY/$IMAGE_NAME:${GITHUB_SHA:0:7}

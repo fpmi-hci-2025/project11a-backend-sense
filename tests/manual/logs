@@ -1,0 +1,9 @@
+2025/11/20 22:56:25 Warning: Failed to load test data: open test_data.json: no such file or directory (will create new)
+2025/11/20 22:56:25 Auth tests failed: login user1 after conflict status check failed: expected status 200, got 401, body: {"error":"unauthorized","message":"Неверные учетные данные"}
+2025/11/20 22:56:25 Publication tests failed: create post status check failed: expected status 201, got 401, body: {"error":"unauthorized","message":"Требуется аутентификация"}
+2025/11/20 22:56:25 Comment tests failed: no publication ID available, create a publication first
+2025/11/20 22:56:25 Feed tests failed: get my feed status check failed: expected status 200, got 401, body: {"error":"unauthorized","message":"Требуется аутентификация"}
+2025/11/20 22:56:25 Profile tests failed: get my profile status check failed: expected status 200, got 401, body: {"error":"unauthorized","message":"Требуется аутентификация"}
+2025/11/20 22:56:25 Media tests failed: upload media status check failed: expected status 201, got 401, body: {"error":"unauthorized","message":"Требуется аутентификация"}
+2025/11/20 22:56:25 AI tests failed: get recommendations status check failed: expected status 200, got 401, body: {"error":"unauthorized","message":"Требуется аутентификация"}
+exit status 1
