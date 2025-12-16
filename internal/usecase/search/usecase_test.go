@@ -69,8 +69,10 @@ func TestSearchPublications_Success(t *testing.T) {
 	tagRepo := mocks.NewMockTagRepository(ctrl)
 	uc := NewUseCase(publicationRepo, userRepo, tagRepo)
 
+	const testUserID = "user-123"
+
 	query := "test query"
-	viewerUserID := "user-123"
+	viewerUserID := testUserID
 	filters := &domain.SearchFilters{}
 
 	publications := []*domain.PublicationWithLikeStatus{
@@ -97,11 +99,13 @@ func TestSearchPublications_WithFilters(t *testing.T) {
 	tagRepo := mocks.NewMockTagRepository(ctrl)
 	uc := NewUseCase(publicationRepo, userRepo, tagRepo)
 
+	const testUserID = "user-123"
+
 	query := "test query"
-	viewerUserID := "user-123"
+	viewerUserID := testUserID
 	pubType := domain.PublicationTypeArticle
 	visibility := domain.VisibilityTypePublic
-	authorID := "user-123"
+	authorID := testUserID
 
 	filters := &domain.SearchFilters{
 		Type:       &pubType,

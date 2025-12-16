@@ -412,6 +412,37 @@ INSERT INTO publication_likes (id, user_id, publication_id, created_at) VALUES
 ('30000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000014', '2024-02-12 12:30:00+00'),
 ('30000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000014', '2024-02-12 13:00:00+00');
 
+-- Additional PUBLICATION LIKES for publications 21-100 (moderate: 3-5 likes per publication)
+WITH pubs AS (
+  SELECT generate_series(21, 100) AS pub_num
+),
+like_rows AS (
+  SELECT
+    p.pub_num,
+    u.user_id,
+    row_number() OVER (ORDER BY p.pub_num, u.user_id::text) AS seq
+  FROM pubs p
+  CROSS JOIN LATERAL (
+    SELECT unnest(ARRAY[
+      '00000000-0000-0000-0000-000000000004'::uuid,
+      '00000000-0000-0000-0000-000000000005'::uuid,
+      '00000000-0000-0000-0000-000000000006'::uuid
+    ]) AS user_id
+    UNION ALL SELECT '00000000-0000-0000-0000-000000000007'::uuid WHERE (p.pub_num % 4) = 0
+    UNION ALL SELECT '00000000-0000-0000-0000-000000000002'::uuid WHERE (p.pub_num % 10) = 0
+  ) u
+)
+INSERT INTO publication_likes (id, user_id, publication_id, created_at)
+SELECT
+  ('30000000-0000-0000-0000-' || lpad((16 + lr.seq)::text, 12, '0'))::uuid AS id,
+  lr.user_id,
+  ('10000000-0000-0000-0000-' || lpad(lr.pub_num::text, 12, '0'))::uuid AS publication_id,
+  ('2024-03-19 09:05:00+00'::timestamptz
+    + (lr.pub_num - 21) * interval '10 minutes'
+    + (lr.seq % 5) * interval '2 minutes') AS created_at
+FROM like_rows lr
+ORDER BY lr.seq;
+
 -- COMMENT LIKES
 INSERT INTO comment_likes (id, user_id, comment_id, created_at) VALUES
 ('40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000001', '2024-01-20 11:30:00+00'),
@@ -505,6 +536,40 @@ INSERT INTO publication_tags (publication_id, tag_id, created_at) VALUES
 ('10000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000004', '2024-01-25 14:30:00+00'),
 ('10000000-0000-0000-0000-000000000003', '70000000-0000-0000-0000-000000000004', '2024-02-01 09:15:00+00');
 
+-- Additional PUBLICATION TAGS for publications 21-100 (1-3 tags each)
+WITH pubs AS (
+  SELECT generate_series(21, 100) AS pub_num
+),
+pub_tags AS (
+  -- Always assign 'programming'
+  SELECT pub_num, '70000000-0000-0000-0000-000000000001'::uuid AS tag_id FROM pubs
+  UNION ALL
+  -- Add a second tag based on modulus for variety
+  SELECT pub_num,
+         CASE
+           WHEN (pub_num % 3) = 0 THEN '70000000-0000-0000-0000-000000000002'::uuid -- microservices
+           WHEN (pub_num % 3) = 1 THEN '70000000-0000-0000-0000-000000000003'::uuid -- api-design
+           ELSE '70000000-0000-0000-0000-000000000006'::uuid -- database
+         END AS tag_id
+  FROM pubs
+  UNION ALL
+  -- Add a third tag only for some publications
+  SELECT pub_num,
+         CASE
+           WHEN (pub_num % 2) = 0 THEN '70000000-0000-0000-0000-000000000008'::uuid -- go
+           ELSE '70000000-0000-0000-0000-000000000009'::uuid -- ai
+         END AS tag_id
+  FROM pubs
+  WHERE (pub_num % 4) = 0
+)
+INSERT INTO publication_tags (publication_id, tag_id, created_at)
+SELECT
+  ('10000000-0000-0000-0000-' || lpad(pub_num::text, 12, '0'))::uuid AS publication_id,
+  tag_id,
+  ('2024-03-19 09:00:00+00'::timestamptz + (pub_num - 21) * interval '5 minutes') AS created_at
+FROM pub_tags
+ORDER BY pub_num, tag_id::text;
+
 -- NOTIFICATIONS
 INSERT INTO notifications (id, user_id, type, title, message, data, is_read, created_at) VALUES
 -- Notifications for user1
@@ -551,6 +616,37 @@ INSERT INTO publications_views (view_uuid, user_id, publication_id, viewed_at) V
 ('90000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000014', '2024-02-12 12:00:00+00'),
 ('90000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000014', '2024-02-12 13:00:00+00');
 
+-- Additional PUBLICATION VIEWS for publications 21-100 (1-3 views each; unique (user_id, publication_id, viewed_at))
+WITH pubs AS (
+  SELECT generate_series(21, 100) AS pub_num
+),
+view_rows AS (
+  SELECT
+    p.pub_num,
+    u.user_id,
+    row_number() OVER (ORDER BY p.pub_num, u.user_id::text) AS seq
+  FROM pubs p
+  CROSS JOIN LATERAL (
+    -- Always: users 4 and 5 view
+    SELECT unnest(ARRAY[
+      '00000000-0000-0000-0000-000000000004'::uuid,
+      '00000000-0000-0000-0000-000000000005'::uuid
+    ]) AS user_id
+    -- Sometimes: user 6 also views
+    UNION ALL SELECT '00000000-0000-0000-0000-000000000006'::uuid WHERE (p.pub_num % 3) = 0
+  ) u
+)
+INSERT INTO publications_views (view_uuid, user_id, publication_id, viewed_at)
+SELECT
+  ('90000000-0000-0000-0000-' || lpad((15 + vr.seq)::text, 12, '0'))::uuid AS view_uuid,
+  vr.user_id,
+  ('10000000-0000-0000-0000-' || lpad(vr.pub_num::text, 12, '0'))::uuid AS publication_id,
+  ('2024-03-19 09:10:00+00'::timestamptz
+    + (vr.pub_num - 21) * interval '7 minutes'
+    + (vr.seq % 7) * interval '1 minute') AS viewed_at
+FROM view_rows vr
+ORDER BY vr.seq;
+
 -- RECOMMENDATIONS
 INSERT INTO recommendations (id, user_id, publication_id, algorithm, reason, rank, created_at, hidden) VALUES
 -- Recommendations for user1
@@ -566,6 +662,42 @@ INSERT INTO recommendations (id, user_id, publication_id, algorithm, reason, ran
 ('a0000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000001', 'popular', 'Popular quote', 0, '2024-03-16 10:00:00+00', false),
 ('a0000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000006', 'popular', 'Trending post', 1, '2024-03-16 10:00:00+00', false),
 ('a0000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000013', 'collaborative', 'Based on followed users', 2, '2024-03-16 10:00:00+00', false);
+
+-- Additional RECOMMENDATIONS for new publications 21-100
+WITH pub_set AS (
+  SELECT generate_series(21, 100) AS pub_num
+),
+user_set AS (
+  -- Keep it focused on the same test users used above
+  SELECT unnest(ARRAY[
+    '00000000-0000-0000-0000-000000000004'::uuid, -- testuser1
+    '00000000-0000-0000-0000-000000000005'::uuid, -- testuser2
+    '00000000-0000-0000-0000-000000000007'::uuid  -- reader_only
+  ]) AS user_id
+),
+ranked AS (
+  SELECT
+    u.user_id,
+    p.pub_num,
+    row_number() OVER (PARTITION BY u.user_id ORDER BY p.pub_num) - 1 AS rank,
+    row_number() OVER (ORDER BY u.user_id::text, p.pub_num) AS seq
+  FROM user_set u
+  JOIN pub_set p ON ((p.pub_num + (CASE WHEN u.user_id = '00000000-0000-0000-0000-000000000004'::uuid THEN 0
+                                      WHEN u.user_id = '00000000-0000-0000-0000-000000000005'::uuid THEN 1
+                                      ELSE 2 END)) % 3) = 0
+)
+INSERT INTO recommendations (id, user_id, publication_id, algorithm, reason, rank, created_at, hidden)
+SELECT
+  ('a0000000-0000-0000-0000-' || lpad((8 + r.seq)::text, 12, '0'))::uuid AS id,
+  r.user_id,
+  ('10000000-0000-0000-0000-' || lpad(r.pub_num::text, 12, '0'))::uuid AS publication_id,
+  CASE WHEN (r.pub_num % 2) = 0 THEN 'collaborative' ELSE 'content-based' END AS algorithm,
+  CASE WHEN (r.pub_num % 2) = 0 THEN 'Similar users liked this' ELSE 'Matches your reading history' END AS reason,
+  r.rank,
+  ('2024-03-19 10:00:00+00'::timestamptz + r.rank * interval '3 minutes') AS created_at,
+  false AS hidden
+FROM ranked r
+ORDER BY r.seq;
 
 COMMIT;
 

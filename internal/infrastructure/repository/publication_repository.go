@@ -290,7 +290,6 @@ func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string
 		if filters.Visibility != nil {
 			countWhere = append(countWhere, fmt.Sprintf("p.visibility = $%d", countIdx))
 			countArgs = append(countArgs, *filters.Visibility)
-			countIdx++
 		}
 	}
 	countWhereClause := strings.Join(countWhere, " AND ")
@@ -619,7 +618,6 @@ func (r *publicationRepository) Search(ctx context.Context, query string, viewer
 		if filters.AuthorID != nil {
 			where = append(where, fmt.Sprintf("p.author_id = $%d", filterStartIndex))
 			filterValues = append(filterValues, *filters.AuthorID)
-			filterStartIndex++
 		}
 	}
 
