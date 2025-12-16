@@ -93,12 +93,18 @@ func (r *publicationRepository) GetByIDWithLikeStatus(ctx context.Context, id st
 	result := &domain.PublicationWithLikeStatus{
 		Publication: *pub,
 		IsLiked:     false,
+		IsSaved:     false,
 	}
 
 	if viewerUserID != nil {
 		isLiked, err := r.IsLiked(ctx, *viewerUserID, id)
 		if err == nil {
 			result.IsLiked = isLiked
+		}
+
+		isSaved, err := r.IsSaved(ctx, *viewerUserID, id)
+		if err == nil {
+			result.IsSaved = isSaved
 		}
 	}
 
@@ -219,9 +225,11 @@ func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, fil
 			       COALESCE(likes.count, 0) as likes_count,
 			       COALESCE(comments.count, 0) as comments_count,
 			       COALESCE(saved.count, 0) as saved_count,
-			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked
+			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked,
+			       CASE WHEN si.user_id IS NOT NULL THEN true ELSE false END as is_saved
 			FROM publications p
 			LEFT JOIN publication_likes pl ON p.id = pl.publication_id AND pl.user_id = $%d
+			LEFT JOIN saved_items si ON p.id = si.publication_id AND si.user_id = $%d
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM publication_likes GROUP BY publication_id) likes 
 			  ON p.id = likes.publication_id
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM comments GROUP BY publication_id) comments 
@@ -231,14 +239,15 @@ func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, fil
 			WHERE %s
 			ORDER BY p.publication_date DESC
 			LIMIT $%d OFFSET $%d
-		`, userIDArgIndex, whereClause, argIndex, argIndex+1)
+		`, userIDArgIndex, userIDArgIndex, whereClause, argIndex, argIndex+1)
 	} else {
 		query = fmt.Sprintf(`
 			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
 			       COALESCE(likes.count, 0) as likes_count,
 			       COALESCE(comments.count, 0) as comments_count,
 			       COALESCE(saved.count, 0) as saved_count,
-			       false as is_liked
+			       false as is_liked,
+			       false as is_saved
 			FROM publications p
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM publication_likes GROUP BY publication_id) likes 
 			  ON p.id = likes.publication_id
@@ -265,7 +274,7 @@ func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, fil
 		err := rows.Scan(
 			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Title, &pub.Content, &pub.Source,
 			&pub.PublicationDate, &pub.Visibility, &pub.LikesCount,
-			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked,
+			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked, &pub.IsSaved,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -334,9 +343,11 @@ func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string
 			       COALESCE(likes.count, 0) as likes_count,
 			       COALESCE(comments.count, 0) as comments_count,
 			       COALESCE(saved.count, 0) as saved_count,
-			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked
+			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked,
+			       CASE WHEN si.user_id IS NOT NULL THEN true ELSE false END as is_saved
 			FROM publications p
 			LEFT JOIN publication_likes pl ON p.id = pl.publication_id AND pl.user_id = $%d
+			LEFT JOIN saved_items si ON p.id = si.publication_id AND si.user_id = $%d
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM publication_likes GROUP BY publication_id) likes 
 			  ON p.id = likes.publication_id
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM comments GROUP BY publication_id) comments 
@@ -346,14 +357,15 @@ func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string
 			WHERE %s
 			ORDER BY p.publication_date DESC
 			LIMIT $%d OFFSET $%d
-		`, viewerUserIDArgIndex, queryWhereClause, limitPlaceholder, offsetPlaceholder)
+		`, viewerUserIDArgIndex, viewerUserIDArgIndex, queryWhereClause, limitPlaceholder, offsetPlaceholder)
 	} else {
 		query = fmt.Sprintf(`
 			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
 			       COALESCE(likes.count, 0) as likes_count,
 			       COALESCE(comments.count, 0) as comments_count,
 			       COALESCE(saved.count, 0) as saved_count,
-			       false as is_liked
+			       false as is_liked,
+			       false as is_saved
 			FROM publications p
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM publication_likes GROUP BY publication_id) likes 
 			  ON p.id = likes.publication_id
@@ -381,7 +393,7 @@ func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string
 		if err := rows.Scan(
 			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Title, &pub.Content, &pub.Source,
 			&pub.PublicationDate, &pub.Visibility, &pub.LikesCount,
-			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked,
+			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked, &pub.IsSaved,
 		); err != nil {
 			return nil, 0, err
 		}
@@ -550,7 +562,8 @@ func (r *publicationRepository) GetSaved(ctx context.Context, userID string, fil
 		       COALESCE(comments.count, 0) as comments_count,
 		       COALESCE(saved.count, 0) as saved_count,
 		       si.note, si.added_at,
-		       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked
+		       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked,
+		       true as is_saved
 		FROM saved_items si
 		INNER JOIN publications p ON si.publication_id = p.id
 		LEFT JOIN publication_likes pl ON p.id = pl.publication_id AND pl.user_id = $1
@@ -578,7 +591,7 @@ func (r *publicationRepository) GetSaved(ctx context.Context, userID string, fil
 		err := rows.Scan(
 			&sp.ID, &sp.AuthorID, &sp.Type, &sp.Title, &sp.Content, &sp.Source,
 			&sp.PublicationDate, &sp.Visibility, &sp.LikesCount,
-			&sp.CommentsCount, &sp.SavedCount, &sp.SavedNote, &sp.SavedAt, &sp.IsLiked,
+			&sp.CommentsCount, &sp.SavedCount, &sp.SavedNote, &sp.SavedAt, &sp.IsLiked, &sp.IsSaved,
 		)
 		if err != nil {
 			return nil, 0, err
@@ -650,9 +663,11 @@ func (r *publicationRepository) Search(ctx context.Context, query string, viewer
 			       COALESCE(likes.count, 0) as likes_count,
 			       COALESCE(comments.count, 0) as comments_count,
 			       COALESCE(saved.count, 0) as saved_count,
-			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked
+			       CASE WHEN pl.user_id IS NOT NULL THEN true ELSE false END as is_liked,
+			       CASE WHEN si.user_id IS NOT NULL THEN true ELSE false END as is_saved
 			FROM publications p
 			LEFT JOIN publication_likes pl ON p.id = pl.publication_id AND pl.user_id = $%d
+			LEFT JOIN saved_items si ON p.id = si.publication_id AND si.user_id = $%d
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM publication_likes GROUP BY publication_id) likes 
 			  ON p.id = likes.publication_id
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM comments GROUP BY publication_id) comments 
@@ -662,14 +677,15 @@ func (r *publicationRepository) Search(ctx context.Context, query string, viewer
 			WHERE %s
 			ORDER BY p.publication_date DESC
 			LIMIT $%d OFFSET $%d
-		`, viewerUserIDArgIndex, whereClause, limitPlaceholder, offsetPlaceholder)
+		`, viewerUserIDArgIndex, viewerUserIDArgIndex, whereClause, limitPlaceholder, offsetPlaceholder)
 	} else {
 		queryStr = fmt.Sprintf(`
 			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
 			       COALESCE(likes.count, 0) as likes_count,
 			       COALESCE(comments.count, 0) as comments_count,
 			       COALESCE(saved.count, 0) as saved_count,
-			       false as is_liked
+			       false as is_liked,
+			       false as is_saved
 			FROM publications p
 			LEFT JOIN (SELECT publication_id, COUNT(*) as count FROM publication_likes GROUP BY publication_id) likes 
 			  ON p.id = likes.publication_id
@@ -697,7 +713,7 @@ func (r *publicationRepository) Search(ctx context.Context, query string, viewer
 		if err := rows.Scan(
 			&pub.ID, &pub.AuthorID, &pub.Type, &pub.Title, &pub.Content, &pub.Source,
 			&pub.PublicationDate, &pub.Visibility, &pub.LikesCount,
-			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked,
+			&pub.CommentsCount, &pub.SavedCount, &pub.IsLiked, &pub.IsSaved,
 		); err != nil {
 			return nil, 0, err
 		}

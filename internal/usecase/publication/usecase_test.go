@@ -34,6 +34,7 @@ func createTestPublicationWithLikeStatus() *domain.PublicationWithLikeStatus {
 	return &domain.PublicationWithLikeStatus{
 		Publication: *createTestPublication(),
 		IsLiked:     false,
+		IsSaved:     false,
 	}
 }
 

@@ -92,5 +92,6 @@ type SavedPublication struct {
 type SavedPublicationWithLikeStatus struct {
 	SavedPublication
 	IsLiked bool `json:"is_liked"`
+	IsSaved bool `json:"is_saved"`
 }
 

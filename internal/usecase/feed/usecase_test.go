@@ -37,6 +37,7 @@ func createTestPublicationWithLikeStatus() *domain.PublicationWithLikeStatus {
 	return &domain.PublicationWithLikeStatus{
 		Publication: *createTestPublication(),
 		IsLiked:     false,
+		IsSaved:     false,
 	}
 }
 
@@ -132,6 +133,7 @@ func TestGetSavedFeed_Success(t *testing.T) {
 				SavedAt:     time.Now(),
 			},
 			IsLiked: false,
+			IsSaved: true,
 		},
 	}
 

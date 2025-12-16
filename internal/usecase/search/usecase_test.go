@@ -37,6 +37,7 @@ func createTestPublicationWithLikeStatus() *domain.PublicationWithLikeStatus {
 	return &domain.PublicationWithLikeStatus{
 		Publication: *createTestPublication(),
 		IsLiked:     false,
+		IsSaved:     false,
 	}
 }
 
@@ -229,4 +230,3 @@ func TestGetTags_WithSearch(t *testing.T) {
 	assert.Len(t, result, 1)
 	assert.Equal(t, 1, total)
 }
-
