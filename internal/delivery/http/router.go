@@ -15,17 +15,19 @@ import (
 
 // Router sets up all routes
 type Router struct {
-	router             *mux.Router
-	validator          *validator.Validate
-	logger             *logrus.Logger
-	tokenSvc           *jwt.TokenService
-	authHandler        *authHandler.AuthHandler
-	publicationHandler *authHandler.PublicationHandler
-	commentHandler     *authHandler.CommentHandler
-	profileHandler     *authHandler.ProfileHandler
-	feedHandler        *authHandler.FeedHandler
-	mediaHandler       *authHandler.MediaHandler
-	aiHandler          *authHandler.AIHandler
+	router              *mux.Router
+	validator           *validator.Validate
+	logger              *logrus.Logger
+	tokenSvc            *jwt.TokenService
+	authHandler         *authHandler.AuthHandler
+	publicationHandler  *authHandler.PublicationHandler
+	commentHandler      *authHandler.CommentHandler
+	profileHandler      *authHandler.ProfileHandler
+	feedHandler         *authHandler.FeedHandler
+	mediaHandler        *authHandler.MediaHandler
+	aiHandler           *authHandler.AIHandler
+	searchHandler       *authHandler.SearchHandler
+	notificationHandler *authHandler.NotificationHandler
 }
 
 // NewRouter creates a new router
@@ -40,19 +42,23 @@ func NewRouter(
 	feedHandler *authHandler.FeedHandler,
 	mediaHandler *authHandler.MediaHandler,
 	aiHandler *authHandler.AIHandler,
+	searchHandler *authHandler.SearchHandler,
+	notificationHandler *authHandler.NotificationHandler,
 ) *Router {
 	return &Router{
-		router:             mux.NewRouter(),
-		validator:          validator,
-		logger:             logger,
-		tokenSvc:           tokenSvc,
-		authHandler:        authHandler,
-		publicationHandler: publicationHandler,
-		commentHandler:     commentHandler,
-		profileHandler:     profileHandler,
-		feedHandler:        feedHandler,
-		mediaHandler:       mediaHandler,
-		aiHandler:          aiHandler,
+		router:              mux.NewRouter(),
+		validator:           validator,
+		logger:              logger,
+		tokenSvc:            tokenSvc,
+		authHandler:         authHandler,
+		publicationHandler:  publicationHandler,
+		commentHandler:      commentHandler,
+		profileHandler:      profileHandler,
+		feedHandler:         feedHandler,
+		mediaHandler:        mediaHandler,
+		aiHandler:           aiHandler,
+		searchHandler:       searchHandler,
+		notificationHandler: notificationHandler,
 	}
 }
 
@@ -110,6 +116,24 @@ func (r *Router) SetupRoutes() *mux.Router {
 		middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.aiHandler.HideRecommendation))).Methods("POST")
 	r.router.Handle("/purify",
 		middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.aiHandler.PurifyText))).Methods("POST")
+
+	// Search routes (mixed auth - some optional, some required)
+	r.router.HandleFunc("/search", r.searchHandler.SearchPublications).Methods("GET")
+	r.router.Handle("/search/users",
+		middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.searchHandler.SearchUsers))).Methods("GET")
+	r.router.Handle("/search/warmup",
+		middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.searchHandler.WarmupIndex))).Methods("POST")
+	r.router.Handle("/tags",
+		middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.searchHandler.GetTags))).Methods("GET")
+
+	// Follow routes (protected)
+	followRouter := r.router.PathPrefix("/follow").Subrouter()
+	followRouter.Use(middleware.AuthMiddleware(r.tokenSvc))
+	r.profileHandler.RegisterFollowRoutes(followRouter)
+
+	// Notification routes (protected)
+	r.router.Handle("/notifications",
+		middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.notificationHandler.GetNotifications))).Methods("GET")
 
 	return r.router
 }

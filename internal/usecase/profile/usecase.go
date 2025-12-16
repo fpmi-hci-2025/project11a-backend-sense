@@ -72,11 +72,21 @@ func (uc *UseCase) Follow(ctx context.Context, followerID, followingID string) e
 	if followerID == followingID {
 		return errors.New("cannot follow yourself")
 	}
+	// Check if user exists
+	_, err := uc.userRepo.GetByID(ctx, followingID)
+	if err != nil {
+		return err
+	}
 	return uc.userRepo.Follow(ctx, followerID, followingID)
 }
 
 // Unfollow unfollows a user
 func (uc *UseCase) Unfollow(ctx context.Context, followerID, followingID string) error {
+	// Check if user exists
+	_, err := uc.userRepo.GetByID(ctx, followingID)
+	if err != nil {
+		return err
+	}
 	return uc.userRepo.Unfollow(ctx, followerID, followingID)
 }
 
