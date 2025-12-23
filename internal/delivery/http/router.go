@@ -93,11 +93,11 @@ func (r *Router) SetupRoutes() *mux.Router {
 	profileRouter.Use(middleware.AuthMiddleware(r.tokenSvc))
 	r.profileHandler.RegisterRoutes(profileRouter)
 
-	// Feed routes (some protected, some not)
+	// Feed routes (some protected, some with optional auth)
 	feedRouter := r.router.PathPrefix("/feed").Subrouter()
-	// Public routes
-	feedRouter.HandleFunc("", r.feedHandler.GetFeed).Methods("GET")
-	feedRouter.HandleFunc("/user/{id}", r.feedHandler.GetUser).Methods("GET")
+	// Public routes with optional auth (to get is_liked status for authenticated users)
+	feedRouter.Handle("", middleware.OptionalAuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.feedHandler.GetFeed))).Methods("GET")
+	feedRouter.Handle("/user/{id}", middleware.OptionalAuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.feedHandler.GetUser))).Methods("GET")
 	// Protected routes
 	feedRouter.Handle("/me", middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.feedHandler.GetMe))).Methods("GET")
 	feedRouter.Handle("/me/saved", middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.feedHandler.GetSaved))).Methods("GET")
@@ -118,7 +118,7 @@ func (r *Router) SetupRoutes() *mux.Router {
 		middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.aiHandler.PurifyText))).Methods("POST")
 
 	// Search routes (mixed auth - some optional, some required)
-	r.router.HandleFunc("/search", r.searchHandler.SearchPublications).Methods("GET")
+	r.router.Handle("/search", middleware.OptionalAuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.searchHandler.SearchPublications))).Methods("GET")
 	r.router.Handle("/search/users",
 		middleware.AuthMiddleware(r.tokenSvc)(http.HandlerFunc(r.searchHandler.SearchUsers))).Methods("GET")
 	r.router.Handle("/search/warmup",
