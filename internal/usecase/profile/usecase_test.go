@@ -221,6 +221,10 @@ func TestFollow_Success(t *testing.T) {
 	uc := NewUseCase(userRepo)
 
 	userRepo.EXPECT().
+		GetByID(gomock.Any(), "user-456").
+		Return(&domain.User{ID: "user-456"}, nil)
+
+	userRepo.EXPECT().
 		Follow(gomock.Any(), "user-123", "user-456").
 		Return(nil)
 
@@ -242,6 +246,22 @@ func TestFollow_Self(t *testing.T) {
 	assert.Equal(t, "cannot follow yourself", err.Error())
 }
 
+func TestFollow_UserNotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userRepo := mocks.NewMockUserRepository(ctrl)
+	uc := NewUseCase(userRepo)
+
+	userRepo.EXPECT().
+		GetByID(gomock.Any(), "nonexistent").
+		Return(nil, assert.AnError)
+
+	err := uc.Follow(context.Background(), "user-123", "nonexistent")
+
+	assert.Error(t, err)
+}
+
 func TestUnfollow_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -250,12 +270,32 @@ func TestUnfollow_Success(t *testing.T) {
 	uc := NewUseCase(userRepo)
 
 	userRepo.EXPECT().
+		GetByID(gomock.Any(), "user-456").
+		Return(&domain.User{ID: "user-456"}, nil)
+
+	userRepo.EXPECT().
 		Unfollow(gomock.Any(), "user-123", "user-456").
 		Return(nil)
 
 	err := uc.Unfollow(context.Background(), "user-123", "user-456")
 
 	require.NoError(t, err)
+}
+
+func TestUnfollow_UserNotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	userRepo := mocks.NewMockUserRepository(ctrl)
+	uc := NewUseCase(userRepo)
+
+	userRepo.EXPECT().
+		GetByID(gomock.Any(), "nonexistent").
+		Return(nil, assert.AnError)
+
+	err := uc.Unfollow(context.Background(), "user-123", "nonexistent")
+
+	assert.Error(t, err)
 }
 
 func TestIsFollowing_Success(t *testing.T) {
@@ -274,4 +314,3 @@ func TestIsFollowing_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, result)
 }
-

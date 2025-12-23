@@ -18,6 +18,8 @@ info:
     url: https://opensource.org/licenses/MIT
 
 tags:
+  - name: Health
+    description: Проверка здоровья сервиса
   - name: Auth
     description: Аутентификация и авторизация пользователей
   - name: Publications
@@ -36,6 +38,25 @@ tags:
     description: AI-функции (рекомендации, модерация)
 
 paths:
+  # Health check
+  /health:
+    get:
+      tags: [Health]
+      summary: Проверка здоровья сервиса
+      description: Эндпоинт для проверки доступности API
+      security: []
+      responses:
+        '200':
+          description: Сервис работает нормально
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
   # Аутентификация
   /auth/login:
     post:
@@ -195,7 +216,10 @@ paths:
     get:
       tags: [Publications]
       summary: Получить публикацию
-      description: Получение информации о публикации по ID
+      description: |
+        Получение информации о публикации по ID.
+        Аутентификация опциональна - если пользователь авторизован, будет включен статус лайков.
+      security: []
       parameters:
         - $ref: '#/components/parameters/PublicationId'
       responses:
@@ -569,7 +593,10 @@ paths:
     get:
       tags: [Feed]
       summary: Получить ленту
-      description: Получение основной ленты публикаций с фильтрами
+      description: |
+        Получение основной ленты публикаций с фильтрами.
+        Аутентификация опциональна - если пользователь авторизован, будет включен статус лайков.
+      security: []
       parameters:
         - $ref: '#/components/parameters/PaginationLimit'
         - $ref: '#/components/parameters/PaginationOffset'
@@ -721,7 +748,10 @@ paths:
     get:
       tags: [Feed]
       summary: Публикации пользователя
-      description: Получение публикаций конкретного пользователя
+      description: |
+        Получение публикаций конкретного пользователя.
+        Аутентификация опциональна - если пользователь авторизован, будет включен статус лайков.
+      security: []
       parameters:
         - $ref: '#/components/parameters/UserId'
         - $ref: '#/components/parameters/PaginationLimit'
@@ -877,7 +907,10 @@ paths:
     get:
       tags: [Search]
       summary: Поиск публикаций
-      description: Поиск публикаций по тексту и фильтрам
+      description: |
+        Поиск публикаций по тексту и фильтрам.
+        Аутентификация опциональна - если пользователь авторизован, будет включен статус лайков.
+      security: []
       parameters:
         - name: q
           in: query
@@ -922,7 +955,9 @@ paths:
     get:
       tags: [Search]
       summary: Поиск пользователей
-      description: Поиск пользователей по имени или описанию
+      description: |
+        Поиск пользователей по имени или описанию.
+        Требуется аутентификация.
       parameters:
         - name: q
           in: query
@@ -1380,7 +1415,9 @@ paths:
     get:
       tags: [Search]
       summary: Получить популярные теги
-      description: Получение списка популярных тегов
+      description: |
+        Получение списка популярных тегов.
+        Требуется аутентификация.
       parameters:
         - name: limit
           in: query

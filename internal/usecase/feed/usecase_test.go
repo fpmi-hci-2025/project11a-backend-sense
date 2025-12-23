@@ -20,15 +20,24 @@ const (
 func createTestPublication() *domain.Publication {
 	content := "Test publication"
 	return &domain.Publication{
-		ID:             "pub-123",
-		AuthorID:       testUserID,
-		Type:           domain.PublicationTypePost,
-		Content:        &content,
+		ID:              "pub-123",
+		AuthorID:        testUserID,
+		Type:            domain.PublicationTypePost,
+		Title:           "Test Title",
+		Content:         &content,
 		PublicationDate: time.Now(),
-		Visibility:     domain.VisibilityTypePublic,
-		LikesCount:     0,
-		CommentsCount:  0,
-		SavedCount:     0,
+		Visibility:      domain.VisibilityTypePublic,
+		LikesCount:      0,
+		CommentsCount:   0,
+		SavedCount:      0,
+	}
+}
+
+func createTestPublicationWithLikeStatus() *domain.PublicationWithLikeStatus {
+	return &domain.PublicationWithLikeStatus{
+		Publication: *createTestPublication(),
+		IsLiked:     false,
+		IsSaved:     false,
 	}
 }
 
@@ -45,8 +54,8 @@ func TestGetFeed_Success(t *testing.T) {
 		Visibility: &[]domain.VisibilityType{domain.VisibilityTypePublic}[0],
 	}
 
-	publications := []*domain.Publication{
-		createTestPublication(),
+	publications := []*domain.PublicationWithLikeStatus{
+		createTestPublicationWithLikeStatus(),
 	}
 
 	publicationRepo.EXPECT().
@@ -72,7 +81,7 @@ func TestGetFeed_Empty(t *testing.T) {
 
 	publicationRepo.EXPECT().
 		GetFeed(gomock.Any(), &userID, filters, 10, 0).
-		Return([]*domain.Publication{}, 0, nil)
+		Return([]*domain.PublicationWithLikeStatus{}, 0, nil)
 
 	result, total, err := uc.GetFeed(context.Background(), &userID, filters, 10, 0)
 
@@ -88,19 +97,20 @@ func TestGetUserFeed_Success(t *testing.T) {
 	publicationRepo := mocks.NewMockPublicationRepository(ctrl)
 	uc := NewUseCase(publicationRepo)
 
+	viewerUserID := testUserID
 	filters := &domain.PublicationFilters{
 		Type: &[]domain.PublicationType{domain.PublicationTypePost}[0],
 	}
 
-	publications := []*domain.Publication{
-		createTestPublication(),
+	publications := []*domain.PublicationWithLikeStatus{
+		createTestPublicationWithLikeStatus(),
 	}
 
 	publicationRepo.EXPECT().
-		GetByAuthor(gomock.Any(), testUserID, filters, 10, 0).
+		GetByAuthor(gomock.Any(), testUserID, &viewerUserID, filters, 10, 0).
 		Return(publications, 1, nil)
 
-	result, total, err := uc.GetUserFeed(context.Background(), testUserID, filters, 10, 0)
+	result, total, err := uc.GetUserFeed(context.Background(), testUserID, &viewerUserID, filters, 10, 0)
 
 	require.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -116,10 +126,14 @@ func TestGetSavedFeed_Success(t *testing.T) {
 
 	filters := &domain.PublicationFilters{}
 
-	savedPublications := []*domain.SavedPublication{
+	savedPublications := []*domain.SavedPublicationWithLikeStatus{
 		{
-			Publication: *createTestPublication(),
-			SavedAt:     time.Now(),
+			SavedPublication: domain.SavedPublication{
+				Publication: *createTestPublication(),
+				SavedAt:     time.Now(),
+			},
+			IsLiked: false,
+			IsSaved: true,
 		},
 	}
 
@@ -154,8 +168,8 @@ func TestGetFeed_WithFilters(t *testing.T) {
 		DateTo:     &dateTo,
 	}
 
-	publications := []*domain.Publication{
-		createTestPublication(),
+	publications := []*domain.PublicationWithLikeStatus{
+		createTestPublicationWithLikeStatus(),
 	}
 
 	publicationRepo.EXPECT().

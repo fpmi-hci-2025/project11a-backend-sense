@@ -22,8 +22,10 @@ import (
 	commentUsecase "sense-backend/internal/usecase/comment"
 	feedUsecase "sense-backend/internal/usecase/feed"
 	mediaUsecase "sense-backend/internal/usecase/media"
+	notificationUsecase "sense-backend/internal/usecase/notification"
 	profileUsecase "sense-backend/internal/usecase/profile"
 	publicationUsecase "sense-backend/internal/usecase/publication"
+	searchUsecase "sense-backend/internal/usecase/search"
 	"sense-backend/pkg/config"
 	"sense-backend/pkg/logger"
 
@@ -57,6 +59,8 @@ func main() {
 	commentRepo := repository.NewCommentRepository(dbPool)
 	mediaRepo := repository.NewMediaRepository(dbPool)
 	recommendationRepo := repository.NewRecommendationRepository(dbPool)
+	tagRepo := repository.NewTagRepository(dbPool)
+	notificationRepo := repository.NewNotificationRepository(dbPool)
 
 	// Initialize JWT service
 	tokenSvc := jwt.NewTokenService(&cfg.JWT)
@@ -72,6 +76,8 @@ func main() {
 	feedUC := feedUsecase.NewUseCase(publicationRepo)
 	mediaUC := mediaUsecase.NewUseCase(mediaRepo)
 	aiUC := aiUsecase.NewUseCase(aiClient, recommendationRepo, publicationRepo)
+	searchUC := searchUsecase.NewUseCase(publicationRepo, userRepo, tagRepo)
+	notificationUC := notificationUsecase.NewUseCase(notificationRepo)
 
 	// Initialize validator
 	validator := validator.New()
@@ -84,9 +90,11 @@ func main() {
 	feedH := authHandler.NewFeedHandler(feedUC, validator)
 	mediaH := authHandler.NewMediaHandler(mediaUC, validator, cfg.Media.MaxFileSize)
 	aiH := authHandler.NewAIHandler(aiUC, validator)
+	searchH := authHandler.NewSearchHandler(searchUC, validator)
+	notificationH := authHandler.NewNotificationHandler(notificationUC, validator)
 
 	// Initialize router
-	router := httpDelivery.NewRouter(validator, appLogger, tokenSvc, authH, publicationH, commentH, profileH, feedH, mediaH, aiH)
+	router := httpDelivery.NewRouter(validator, appLogger, tokenSvc, authH, publicationH, commentH, profileH, feedH, mediaH, aiH, searchH, notificationH)
 	muxRouter := router.SetupRoutes()
 
 	// Apply CORS middleware

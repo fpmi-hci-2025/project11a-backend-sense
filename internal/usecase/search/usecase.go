@@ -25,9 +25,9 @@ func NewUseCase(
 	}
 }
 
-// SearchPublications searches publications
-func (uc *UseCase) SearchPublications(ctx context.Context, query string, filters *domain.SearchFilters, limit, offset int) ([]*domain.Publication, int, error) {
-	return uc.publicationRepo.Search(ctx, query, filters, limit, offset)
+// SearchPublications searches publications with like status for viewer
+func (uc *UseCase) SearchPublications(ctx context.Context, query string, viewerUserID *string, filters *domain.SearchFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
+	return uc.publicationRepo.Search(ctx, query, viewerUserID, filters, limit, offset)
 }
 
 // SearchUsers searches users

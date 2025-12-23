@@ -13,15 +13,18 @@ import (
 
 func main() {
 	var (
-		baseURL     = flag.String("url", "http://localhost:8080", "API base URL")
-		dataFile    = flag.String("data", "test_data.json", "Test data file path")
-		skipAuth    = flag.Bool("skip-auth", false, "Skip auth tests")
-		skipPub     = flag.Bool("skip-publications", false, "Skip publication tests")
-		skipComment = flag.Bool("skip-comments", false, "Skip comment tests")
-		skipFeed    = flag.Bool("skip-feed", false, "Skip feed tests")
-		skipProfile = flag.Bool("skip-profile", false, "Skip profile tests")
-		skipMedia   = flag.Bool("skip-media", false, "Skip media tests")
-		skipAI      = flag.Bool("skip-ai", false, "Skip AI tests")
+		baseURL          = flag.String("url", "http://localhost:8080", "API base URL")
+		dataFile         = flag.String("data", "test_data.json", "Test data file path")
+		skipAuth         = flag.Bool("skip-auth", false, "Skip auth tests")
+		skipPub          = flag.Bool("skip-publications", false, "Skip publication tests")
+		skipComment      = flag.Bool("skip-comments", false, "Skip comment tests")
+		skipFeed         = flag.Bool("skip-feed", false, "Skip feed tests")
+		skipProfile      = flag.Bool("skip-profile", false, "Skip profile tests")
+		skipMedia        = flag.Bool("skip-media", false, "Skip media tests")
+		skipAI           = flag.Bool("skip-ai", false, "Skip AI tests")
+		skipSearch       = flag.Bool("skip-search", false, "Skip search tests")
+		skipSocial       = flag.Bool("skip-social", false, "Skip social/follow tests")
+		skipNotification = flag.Bool("skip-notifications", false, "Skip notification tests")
 	)
 	flag.Parse()
 
@@ -108,6 +111,27 @@ func main() {
 		}
 		if err := testdata.SaveTestData(*dataFile); err != nil {
 			log.Printf("Warning: Failed to save test data: %v", err)
+		}
+	}
+
+	if !*skipSearch {
+		if err := testers.TestSearchEndpoints(apiClient); err != nil {
+			log.Printf("Search tests failed: %v", err)
+			errors = append(errors, fmt.Errorf("search: %w", err))
+		}
+	}
+
+	if !*skipSocial {
+		if err := testers.TestSocialEndpoints(apiClient); err != nil {
+			log.Printf("Social/follow tests failed: %v", err)
+			errors = append(errors, fmt.Errorf("social: %w", err))
+		}
+	}
+
+	if !*skipNotification {
+		if err := testers.TestNotificationEndpoints(apiClient); err != nil {
+			log.Printf("Notification tests failed: %v", err)
+			errors = append(errors, fmt.Errorf("notifications: %w", err))
 		}
 	}
 

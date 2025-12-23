@@ -72,7 +72,14 @@ func (h *PublicationHandler) Get(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	publication, err := h.publicationUC.Get(r.Context(), id)
+	// Get viewer user ID for like status (may be empty if not authenticated)
+	userID := middleware.GetUserID(r.Context())
+	var viewerUserID *string
+	if userID != "" {
+		viewerUserID = &userID
+	}
+
+	publication, err := h.publicationUC.Get(r.Context(), id, viewerUserID)
 	if err != nil {
 		WriteError(w, http.StatusNotFound, "not_found", "Публикация не найдена", nil)
 		return
