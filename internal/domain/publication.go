@@ -33,6 +33,7 @@ type Publication struct {
 	LikesCount      int             `json:"likes_count"`
 	CommentsCount   int             `json:"comments_count"`
 	SavedCount      int             `json:"saved_count"`
+	Media           []*MediaAsset   `json:"media,omitempty"`
 }
 
 // PublicationWithLikeStatus represents a publication with user's like status

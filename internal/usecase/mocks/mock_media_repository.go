@@ -114,3 +114,33 @@ func (mr *MockMediaRepositoryMockRecorder) GetByOwner(ctx, ownerID, limit, offse
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByOwner", reflect.TypeOf((*MockMediaRepository)(nil).GetByOwner), ctx, ownerID, limit, offset)
 }
+
+// GetByPublicationID mocks base method.
+func (m *MockMediaRepository) GetByPublicationID(ctx context.Context, publicationID string) ([]*domain.MediaAsset, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByPublicationID", ctx, publicationID)
+	ret0, _ := ret[0].([]*domain.MediaAsset)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByPublicationID indicates an expected call of GetByPublicationID.
+func (mr *MockMediaRepositoryMockRecorder) GetByPublicationID(ctx, publicationID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByPublicationID", reflect.TypeOf((*MockMediaRepository)(nil).GetByPublicationID), ctx, publicationID)
+}
+
+// GetByPublicationIDs mocks base method.
+func (m *MockMediaRepository) GetByPublicationIDs(ctx context.Context, publicationIDs []string) (map[string][]*domain.MediaAsset, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByPublicationIDs", ctx, publicationIDs)
+	ret0, _ := ret[0].(map[string][]*domain.MediaAsset)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByPublicationIDs indicates an expected call of GetByPublicationIDs.
+func (mr *MockMediaRepositoryMockRecorder) GetByPublicationIDs(ctx, publicationIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByPublicationIDs", reflect.TypeOf((*MockMediaRepository)(nil).GetByPublicationIDs), ctx, publicationIDs)
+}
