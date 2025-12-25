@@ -14,7 +14,7 @@ const userIDKey contextKey = "user_id"
 const usernameKey contextKey = "username"
 const roleKey contextKey = "role"
 
-// AuthMiddleware validates JWT token
+// AuthMiddleware validates JWT token (required)
 func AuthMiddleware(tokenSvc *jwt.TokenService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +36,43 @@ func AuthMiddleware(tokenSvc *jwt.TokenService) func(http.Handler) http.Handler 
 				return
 			}
 
+			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+			ctx = context.WithValue(ctx, usernameKey, claims.Username)
+			ctx = context.WithValue(ctx, roleKey, claims.Role)
+
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+// OptionalAuthMiddleware extracts user info from JWT token if present, but does not require authentication.
+// Use this for endpoints that work for both authenticated and unauthenticated users,
+// but need to know who the user is (e.g., to check is_liked status).
+func OptionalAuthMiddleware(tokenSvc *jwt.TokenService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				// No token provided - proceed without user context
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			parts := strings.Split(authHeader, " ")
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				// Invalid format - proceed without user context
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			claims, err := tokenSvc.ValidateToken(parts[1])
+			if err != nil {
+				// Invalid token - proceed without user context
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Valid token - set user context
 			ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 			ctx = context.WithValue(ctx, usernameKey, claims.Username)
 			ctx = context.WithValue(ctx, roleKey, claims.Role)

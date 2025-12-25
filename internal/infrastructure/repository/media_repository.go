@@ -122,3 +122,78 @@ func (r *mediaRepository) CheckOwnership(ctx context.Context, mediaID, userID st
 	return exists, err
 }
 
+func (r *mediaRepository) GetByPublicationID(ctx context.Context, publicationID string) ([]*domain.MediaAsset, error) {
+	query := `
+		SELECT m.id, m.owner_id, m.filename, m.mime, m.width, m.height, m.exif, m.created_at
+		FROM media_assets m
+		INNER JOIN publication_media pm ON m.id = pm.media_id
+		WHERE pm.publication_id = $1
+		ORDER BY pm.ord
+	`
+	
+	rows, err := r.pool.Query(ctx, query, publicationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mediaList []*domain.MediaAsset
+	for rows.Next() {
+		var media domain.MediaAsset
+		var exifJSON interface{}
+		err := rows.Scan(
+			&media.ID, &media.OwnerID, &media.Filename, &media.MIME,
+			&media.Width, &media.Height, &exifJSON, &media.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if exifJSON != nil {
+			media.EXIF = &domain.EXIFData{}
+		}
+		mediaList = append(mediaList, &media)
+	}
+
+	return mediaList, rows.Err()
+}
+
+func (r *mediaRepository) GetByPublicationIDs(ctx context.Context, publicationIDs []string) (map[string][]*domain.MediaAsset, error) {
+	if len(publicationIDs) == 0 {
+		return make(map[string][]*domain.MediaAsset), nil
+	}
+
+	query := `
+		SELECT pm.publication_id, m.id, m.owner_id, m.filename, m.mime, m.width, m.height, m.exif, m.created_at
+		FROM media_assets m
+		INNER JOIN publication_media pm ON m.id = pm.media_id
+		WHERE pm.publication_id = ANY($1)
+		ORDER BY pm.publication_id, pm.ord
+	`
+	
+	rows, err := r.pool.Query(ctx, query, publicationIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string][]*domain.MediaAsset)
+	for rows.Next() {
+		var pubID string
+		var media domain.MediaAsset
+		var exifJSON interface{}
+		err := rows.Scan(
+			&pubID, &media.ID, &media.OwnerID, &media.Filename, &media.MIME,
+			&media.Width, &media.Height, &exifJSON, &media.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if exifJSON != nil {
+			media.EXIF = &domain.EXIFData{}
+		}
+		result[pubID] = append(result[pubID], &media)
+	}
+
+	return result, rows.Err()
+}
+

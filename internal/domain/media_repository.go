@@ -13,6 +13,12 @@ type MediaRepository interface {
 	// GetByOwner retrieves media by owner
 	GetByOwner(ctx context.Context, ownerID string, limit, offset int) ([]*MediaAsset, int, error)
 
+	// GetByPublicationID retrieves media by publication ID
+	GetByPublicationID(ctx context.Context, publicationID string) ([]*MediaAsset, error)
+
+	// GetByPublicationIDs retrieves media for multiple publications (batch)
+	GetByPublicationIDs(ctx context.Context, publicationIDs []string) (map[string][]*MediaAsset, error)
+
 	// Delete deletes media asset
 	Delete(ctx context.Context, id string) error
 

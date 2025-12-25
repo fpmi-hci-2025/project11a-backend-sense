@@ -55,9 +55,9 @@ func main() {
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(dbPool)
-	publicationRepo := repository.NewPublicationRepository(dbPool)
-	commentRepo := repository.NewCommentRepository(dbPool)
 	mediaRepo := repository.NewMediaRepository(dbPool)
+	publicationRepo := repository.NewPublicationRepository(dbPool, mediaRepo)
+	commentRepo := repository.NewCommentRepository(dbPool)
 	recommendationRepo := repository.NewRecommendationRepository(dbPool)
 	tagRepo := repository.NewTagRepository(dbPool)
 	notificationRepo := repository.NewNotificationRepository(dbPool)

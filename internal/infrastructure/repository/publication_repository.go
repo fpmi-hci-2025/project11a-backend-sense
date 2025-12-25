@@ -12,12 +12,16 @@ import (
 )
 
 type publicationRepository struct {
-	pool *pgxpool.Pool
+	pool      *pgxpool.Pool
+	mediaRepo domain.MediaRepository
 }
 
 // NewPublicationRepository creates a new publication repository
-func NewPublicationRepository(pool *pgxpool.Pool) domain.PublicationRepository {
-	return &publicationRepository{pool: pool}
+func NewPublicationRepository(pool *pgxpool.Pool, mediaRepo domain.MediaRepository) domain.PublicationRepository {
+	return &publicationRepository{
+		pool:      pool,
+		mediaRepo: mediaRepo,
+	}
 }
 
 func (r *publicationRepository) Create(ctx context.Context, publication *domain.Publication, mediaIDs []string) error {
@@ -81,7 +85,18 @@ func (r *publicationRepository) GetByID(ctx context.Context, id string) (*domain
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("publication not found")
 	}
-	return &pub, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Load media
+	media, err := r.mediaRepo.GetByPublicationID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load media: %w", err)
+	}
+	pub.Media = media
+
+	return &pub, nil
 }
 
 func (r *publicationRepository) GetByIDWithLikeStatus(ctx context.Context, id string, viewerUserID *string) (*domain.PublicationWithLikeStatus, error) {
@@ -269,6 +284,7 @@ func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, fil
 	defer rows.Close()
 
 	var publications []*domain.PublicationWithLikeStatus
+	var publicationIDs []string
 	for rows.Next() {
 		var pub domain.PublicationWithLikeStatus
 		err := rows.Scan(
@@ -280,9 +296,27 @@ func (r *publicationRepository) GetFeed(ctx context.Context, userID *string, fil
 			return nil, 0, err
 		}
 		publications = append(publications, &pub)
+		publicationIDs = append(publicationIDs, pub.ID)
 	}
 
-	return publications, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	// Load media for all publications in batch
+	mediaMap, err := r.mediaRepo.GetByPublicationIDs(ctx, publicationIDs)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to load media: %w", err)
+	}
+
+	// Assign media to publications
+	for _, pub := range publications {
+		if media, ok := mediaMap[pub.ID]; ok {
+			pub.Media = media
+		}
+	}
+
+	return publications, total, nil
 }
 
 func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string, viewerUserID *string, filters *domain.PublicationFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
@@ -388,6 +422,7 @@ func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string
 	defer rows.Close()
 
 	var publications []*domain.PublicationWithLikeStatus
+	var publicationIDs []string
 	for rows.Next() {
 		var pub domain.PublicationWithLikeStatus
 		if err := rows.Scan(
@@ -398,9 +433,27 @@ func (r *publicationRepository) GetByAuthor(ctx context.Context, authorID string
 			return nil, 0, err
 		}
 		publications = append(publications, &pub)
+		publicationIDs = append(publicationIDs, pub.ID)
 	}
 
-	return publications, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	// Load media for all publications in batch
+	mediaMap, err := r.mediaRepo.GetByPublicationIDs(ctx, publicationIDs)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to load media: %w", err)
+	}
+
+	// Assign media to publications
+	for _, pub := range publications {
+		if media, ok := mediaMap[pub.ID]; ok {
+			pub.Media = media
+		}
+	}
+
+	return publications, total, nil
 }
 
 func (r *publicationRepository) Like(ctx context.Context, userID, publicationID string) (bool, error) {
@@ -586,6 +639,7 @@ func (r *publicationRepository) GetSaved(ctx context.Context, userID string, fil
 	defer rows.Close()
 
 	var saved []*domain.SavedPublicationWithLikeStatus
+	var publicationIDs []string
 	for rows.Next() {
 		var sp domain.SavedPublicationWithLikeStatus
 		err := rows.Scan(
@@ -597,64 +651,97 @@ func (r *publicationRepository) GetSaved(ctx context.Context, userID string, fil
 			return nil, 0, err
 		}
 		saved = append(saved, &sp)
+		publicationIDs = append(publicationIDs, sp.ID)
 	}
 
-	return saved, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	// Load media for all publications in batch
+	mediaMap, err := r.mediaRepo.GetByPublicationIDs(ctx, publicationIDs)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to load media: %w", err)
+	}
+
+	// Assign media to publications
+	for _, pub := range saved {
+		if media, ok := mediaMap[pub.ID]; ok {
+			pub.Media = media
+		}
+	}
+
+	return saved, total, nil
 }
 
 func (r *publicationRepository) Search(ctx context.Context, query string, viewerUserID *string, filters *domain.SearchFilters, limit, offset int) ([]*domain.PublicationWithLikeStatus, int, error) {
 	searchQuery := `%` + query + `%`
-	where := []string{"(p.content ILIKE $1 OR p.title ILIKE $1)"}
-	filterValues := []interface{}{}
 
-	// viewerUserID placeholder (used only in JOIN, not in WHERE)
-	viewerUserIDArgIndex := 0
-
-	// Filters start after search query and optional viewer placeholder
-	filterStartIndex := 2
-	if viewerUserID != nil {
-		viewerUserIDArgIndex = filterStartIndex
-		filterStartIndex++
-	}
+	// Build WHERE clause for count query (without viewerUserID)
+	countWhere := []string{"(p.content ILIKE $1 OR p.title ILIKE $1)"}
+	countArgs := []interface{}{searchQuery}
+	countIdx := 2
 
 	if filters != nil {
 		if filters.Type != nil {
-			where = append(where, fmt.Sprintf("p.type = $%d", filterStartIndex))
-			filterValues = append(filterValues, *filters.Type)
-			filterStartIndex++
+			countWhere = append(countWhere, fmt.Sprintf("p.type = $%d", countIdx))
+			countArgs = append(countArgs, *filters.Type)
+			countIdx++
 		}
 		if filters.Visibility != nil {
-			where = append(where, fmt.Sprintf("p.visibility = $%d", filterStartIndex))
-			filterValues = append(filterValues, *filters.Visibility)
-			filterStartIndex++
+			countWhere = append(countWhere, fmt.Sprintf("p.visibility = $%d", countIdx))
+			countArgs = append(countArgs, *filters.Visibility)
+			countIdx++
 		}
 		if filters.AuthorID != nil {
-			where = append(where, fmt.Sprintf("p.author_id = $%d", filterStartIndex))
-			filterValues = append(filterValues, *filters.AuthorID)
+			countWhere = append(countWhere, fmt.Sprintf("p.author_id = $%d", countIdx))
+			countArgs = append(countArgs, *filters.AuthorID)
+			countIdx++
 		}
 	}
 
-	whereClause := strings.Join(where, " AND ")
+	countWhereClause := strings.Join(countWhere, " AND ")
 
-	// Count query args (exclude viewerUserID to keep placeholders dense)
-	countArgs := []interface{}{searchQuery}
-	countArgs = append(countArgs, filterValues...)
 	var total int
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM publications p WHERE %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM publications p WHERE %s", countWhereClause)
 	if err := r.pool.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
-	// Main query args: search query, optional viewer, filters
-	args := []interface{}{searchQuery}
-	if viewerUserID != nil {
-		viewerUserIDArgIndex = len(args) + 1 // 2
-		args = append(args, *viewerUserID)
-	}
-	args = append(args, filterValues...)
+	// Build WHERE clause for main query (with optional viewerUserID)
+	queryWhere := []string{"(p.content ILIKE $1 OR p.title ILIKE $1)"}
+	queryArgs := []interface{}{searchQuery}
+	queryIdx := 2
 
-	limitPlaceholder := len(args) + 1
-	offsetPlaceholder := len(args) + 2
+	viewerUserIDArgIndex := 0
+	if viewerUserID != nil {
+		viewerUserIDArgIndex = queryIdx
+		queryArgs = append(queryArgs, *viewerUserID)
+		queryIdx++
+	}
+
+	if filters != nil {
+		if filters.Type != nil {
+			queryWhere = append(queryWhere, fmt.Sprintf("p.type = $%d", queryIdx))
+			queryArgs = append(queryArgs, *filters.Type)
+			queryIdx++
+		}
+		if filters.Visibility != nil {
+			queryWhere = append(queryWhere, fmt.Sprintf("p.visibility = $%d", queryIdx))
+			queryArgs = append(queryArgs, *filters.Visibility)
+			queryIdx++
+		}
+		if filters.AuthorID != nil {
+			queryWhere = append(queryWhere, fmt.Sprintf("p.author_id = $%d", queryIdx))
+			queryArgs = append(queryArgs, *filters.AuthorID)
+			queryIdx++
+		}
+	}
+
+	queryWhereClause := strings.Join(queryWhere, " AND ")
+
+	limitPlaceholder := queryIdx
+	offsetPlaceholder := queryIdx + 1
 
 	var queryStr string
 	if viewerUserID != nil {
@@ -677,7 +764,7 @@ func (r *publicationRepository) Search(ctx context.Context, query string, viewer
 			WHERE %s
 			ORDER BY p.publication_date DESC
 			LIMIT $%d OFFSET $%d
-		`, viewerUserIDArgIndex, viewerUserIDArgIndex, whereClause, limitPlaceholder, offsetPlaceholder)
+		`, viewerUserIDArgIndex, viewerUserIDArgIndex, queryWhereClause, limitPlaceholder, offsetPlaceholder)
 	} else {
 		queryStr = fmt.Sprintf(`
 			SELECT p.id, p.author_id, p.type, p.title, p.content, p.source, p.publication_date, p.visibility,
@@ -696,18 +783,19 @@ func (r *publicationRepository) Search(ctx context.Context, query string, viewer
 			WHERE %s
 			ORDER BY p.publication_date DESC
 			LIMIT $%d OFFSET $%d
-		`, whereClause, limitPlaceholder, offsetPlaceholder)
+		`, queryWhereClause, limitPlaceholder, offsetPlaceholder)
 	}
 
-	args = append(args, limit, offset)
+	queryArgs = append(queryArgs, limit, offset)
 
-	rows, err := r.pool.Query(ctx, queryStr, args...)
+	rows, err := r.pool.Query(ctx, queryStr, queryArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var publications []*domain.PublicationWithLikeStatus
+	var publicationIDs []string
 	for rows.Next() {
 		var pub domain.PublicationWithLikeStatus
 		if err := rows.Scan(
@@ -718,9 +806,27 @@ func (r *publicationRepository) Search(ctx context.Context, query string, viewer
 			return nil, 0, err
 		}
 		publications = append(publications, &pub)
+		publicationIDs = append(publicationIDs, pub.ID)
 	}
 
-	return publications, total, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+
+	// Load media for all publications in batch
+	mediaMap, err := r.mediaRepo.GetByPublicationIDs(ctx, publicationIDs)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to load media: %w", err)
+	}
+
+	// Assign media to publications
+	for _, pub := range publications {
+		if media, ok := mediaMap[pub.ID]; ok {
+			pub.Media = media
+		}
+	}
+
+	return publications, total, nil
 }
 
 func (r *publicationRepository) GetMediaIDs(ctx context.Context, publicationID string) ([]string, error) {
